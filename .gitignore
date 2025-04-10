@@ -1,1 +1,76 @@
-404: Not Found
+# Flutter/Dart specific
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+build/
+coverage/
+lib/generated_plugin_registrant.dart
+.pub-cache/
+.dart_tool/
+pubspec.lock
+
+# Android specific
+**/android/.gradle
+**/android/captures/
+**/android/local.properties
+**/android/key.properties
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+**/android/app/google-services.json
+**/android/app/src/main/google-services.json
+**/android/*.keystore
+**/android/*.jks
+**/android/*.p12
+**/android/*.p8
+**/android/app/upload-keystore.jks
+
+# iOS specific
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral
+**/ios/Pods/
+**/ios/Runner.xcworkspace
+**/ios/GoogleService-Info.plist
+**/ios/*.mobileprovision
+**/ios/*.cer
+**/ios/*.p12
+**/ios/*.p8
+
+# VSCode specific
+.vscode/
+*.code-workspace
+.history/
+
+# IntelliJ/Android Studio specific
+**/*.iml
+**/.idea/
+**/android/.idea/
+**/ios/.idea/
+
+# Firebase configuration files
+*google-services.json
+*GoogleService-Info.plist
+*firebase_app_id_file.json
+*firebase_options.dart
+
+# Environment files/secrets
+.env
+.env.development
+.env.production
+*.env.*
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# System files
+.DS_Store
+Thumbs.db

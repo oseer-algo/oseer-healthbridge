@@ -1,7 +1,0 @@
-#Thu Apr 10 13:12:36 EAT 2025
-base.1=/Users/jeremy/Development/Oseer/android_companion_app/build/app/intermediates/dex/release/minifyReleaseWithR8/classes2.dex
-path.1=classes2.dex
-base.0=/Users/jeremy/Development/Oseer/android_companion_app/build/app/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-renamed.1=classes2.dex
-renamed.0=classes.dex
-path.0=classes.dex
