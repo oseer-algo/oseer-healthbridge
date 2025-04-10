@@ -1,0 +1,586 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.oseerapp.healthbridge"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="35" />
+10
+11    <!-- Essential Permissions -->
+12    <uses-permission android:name="android.permission.INTERNET" />
+12-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:6:5-66
+12-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:6:22-64
+13    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+13-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:7:5-78
+13-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:7:22-76
+14
+15    <!-- Health Connect Read Permissions -->
+16    <uses-permission android:name="android.permission.health.READ_STEPS" />
+16-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:10:5-75
+16-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:10:22-73
+17    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+17-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:11:5-80
+17-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:11:22-78
+18    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+18-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:12:5-75
+18-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:12:22-73
+19    <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+19-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:13:5-76
+19-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:13:22-74
+20    <uses-permission android:name="android.permission.health.READ_HEIGHT" />
+20-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:14:5-76
+20-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:14:22-74
+21    <uses-permission android:name="android.permission.health.READ_BLOOD_GLUCOSE" />
+21-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:15:5-83
+21-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:15:22-81
+22    <uses-permission android:name="android.permission.health.READ_BODY_TEMPERATURE" />
+22-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:16:5-86
+22-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:16:22-84
+23    <uses-permission android:name="android.permission.health.READ_BLOOD_OXYGEN" />
+23-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:17:5-82
+23-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:17:22-80
+24    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+24-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:18:5-78
+24-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:18:22-76
+25    <uses-permission android:name="android.permission.health.READ_BLOOD_PRESSURE" />
+25-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:19:5-84
+25-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:19:22-82
+26    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
+26-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:20:5-92
+26-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:20:22-90
+27    <uses-permission android:name="android.permission.health.READ_DISTANCE" />
+27-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:21:5-78
+27-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:21:22-76
+28    <!-- Add other specific health read/write permissions as needed -->
+29
+30
+31    <!-- Package Visibility and Intent Queries -->
+32    <queries>
+32-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:25:5-37:15
+33
+34        <!-- Query for Health Connect SDK -->
+35        <package android:name="com.google.android.apps.healthdata" />
+35-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:27:9-70
+35-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:27:18-67
+36
+37        <intent>
+37-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:28:9-30:18
+38            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+38-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:29:13-88
+38-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:29:21-85
+39        </intent>
+40        <!-- Query for URL Launcher -->
+41        <intent>
+41-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:32:9-35:18
+42            <action android:name="android.intent.action.VIEW" />
+42-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:33:13-65
+42-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:33:21-62
+43
+44            <data android:scheme="https" />
+44-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:34:13-44
+44-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:34:19-41
+45        </intent>
+46        <!-- Add other intent queries if needed (e.g., for http, mailto, tel) -->
+47    </queries>
+48
+49    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+49-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:26:5-79
+49-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:26:22-76
+50    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+50-->[com.google.android.recaptcha:recaptcha:18.4.0] /Users/jeremy/.gradle/caches/transforms-3/bbf0a19e88a212acede18f2cf25d5055/transformed/jetified-recaptcha-18.4.0/AndroidManifest.xml:9:5-98
+50-->[com.google.android.recaptcha:recaptcha:18.4.0] /Users/jeremy/.gradle/caches/transforms-3/bbf0a19e88a212acede18f2cf25d5055/transformed/jetified-recaptcha-18.4.0/AndroidManifest.xml:9:22-95
+51
+52    <permission
+52-->[androidx.core:core:1.13.1] /Users/jeremy/.gradle/caches/transforms-3/978604c739a997cc1f2ebdb7791802d6/transformed/core-1.13.1/AndroidManifest.xml:22:5-24:47
+53        android:name="com.oseerapp.healthbridge.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+53-->[androidx.core:core:1.13.1] /Users/jeremy/.gradle/caches/transforms-3/978604c739a997cc1f2ebdb7791802d6/transformed/core-1.13.1/AndroidManifest.xml:23:9-81
+54        android:protectionLevel="signature" />
+54-->[androidx.core:core:1.13.1] /Users/jeremy/.gradle/caches/transforms-3/978604c739a997cc1f2ebdb7791802d6/transformed/core-1.13.1/AndroidManifest.xml:24:9-44
+55
+56    <uses-permission android:name="com.oseerapp.healthbridge.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" /> <!-- Permission will be merged into the manifest of the hosting app. -->
+56-->[androidx.core:core:1.13.1] /Users/jeremy/.gradle/caches/transforms-3/978604c739a997cc1f2ebdb7791802d6/transformed/core-1.13.1/AndroidManifest.xml:26:5-97
+56-->[androidx.core:core:1.13.1] /Users/jeremy/.gradle/caches/transforms-3/978604c739a997cc1f2ebdb7791802d6/transformed/core-1.13.1/AndroidManifest.xml:26:22-94
+57    <!-- Is required to launch foreground extraction service for targetSdkVersion 28+. -->
+58    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> <!-- Enable onBackInvokedCallback for improved back navigation (API 33+) -->
+58-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:13:5-77
+58-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:13:22-74
+59    <application
+60        android:name="android.app.Application"
+60-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:42:9-42
+61        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+61-->[androidx.core:core:1.13.1] /Users/jeremy/.gradle/caches/transforms-3/978604c739a997cc1f2ebdb7791802d6/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
+62        android:enableOnBackInvokedCallback="true"
+62-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:44:9-51
+63        android:extractNativeLibs="false"
+64        android:icon="@mipmap/ic_launcher"
+64-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:43:9-43
+65        android:label="Oseer Health Bridge" >
+65-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:41:9-44
+66
+67        <!-- Declare optional dependency on Health Connect -->
+68        <uses-library
+68-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:47:9-88
+69            android:name="android.health.connect"
+69-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:47:23-60
+70            android:required="false" />
+70-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:47:61-85
+71
+72        <activity
+72-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:49:9-87:20
+73            android:name="com.oseerapp.healthbridge.MainActivity"
+73-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:50:13-41
+74            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+74-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:54:13-163
+75            android:exported="true"
+75-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:51:13-36
+76            android:hardwareAccelerated="true"
+76-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:55:13-47
+77            android:launchMode="singleTop"
+77-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:52:13-43
+78            android:theme="@style/LaunchTheme"
+78-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:53:13-47
+79            android:windowSoftInputMode="adjustResize" >
+79-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:56:13-55
+80
+81            <!--
+82                 Specifies an Android theme to apply to this Activity as soon as
+83                 the Android process has started. This theme is visible to the user
+84                 while the Flutter UI initializes. After that, this theme continues
+85                 to determine the Window background behind the Flutter UI.
+86            -->
+87            <meta-data
+87-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:62:13-65:17
+88                android:name="io.flutter.embedding.android.NormalTheme"
+88-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:63:15-70
+89                android:resource="@style/NormalTheme" />
+89-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:64:15-52
+90
+91            <!-- Main Launcher Intent Filter -->
+92            <intent-filter>
+92-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:68:13-71:29
+93                <action android:name="android.intent.action.MAIN" />
+93-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:69:17-68
+93-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:69:25-66
+94
+95                <category android:name="android.intent.category.LAUNCHER" />
+95-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:70:17-76
+95-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:70:27-74
+96            </intent-filter>
+97
+98            <!-- Deep Link Intent Filter -->
+99            <intent-filter>
+99-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:74:13-80:29
+100                <action android:name="android.intent.action.VIEW" />
+100-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:33:13-65
+100-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:33:21-62
+101
+102                <category android:name="android.intent.category.DEFAULT" />
+102-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:76:17-76
+102-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:76:27-73
+103                <category android:name="android.intent.category.BROWSABLE" />
+103-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:77:17-78
+103-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:77:27-75
+104                <!-- App's custom deep link URI scheme -->
+105                <data android:scheme="healthbridge" />
+105-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:34:13-44
+105-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:34:19-41
+106            </intent-filter>
+107
+108            <!-- Health Connect: Intent Filter for Permissions Rationale -->
+109            <!-- This is required by the Health Connect SDK -->
+110            <intent-filter>
+110-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:84:13-86:29
+111                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+111-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:29:13-88
+111-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:29:21-85
+112            </intent-filter>
+113        </activity> <!-- Health Connect: Activity Alias for Permission Usage -->
+114        <!-- Required for viewing permission usage in system settings -->
+115        <activity-alias
+115-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:91:9-100:26
+116            android:name="com.oseerapp.healthbridge.ViewPermissionUsageActivity"
+116-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:92:13-55
+117            android:exported="true"
+117-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:93:13-36
+118            android:permission="android.permission.START_VIEW_PERMISSION_USAGE"
+118-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:95:13-80
+119            android:targetActivity="com.oseerapp.healthbridge.MainActivity" >
+119-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:94:13-51
+120            <intent-filter>
+120-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:96:13-99:29
+121                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+121-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:97:17-86
+121-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:97:25-83
+122
+123                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+123-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:98:17-87
+123-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:98:27-84
+124            </intent-filter>
+125        </activity-alias>
+126
+127        <!-- Flutter Embedding Meta-Data -->
+128        <!-- Do not delete this meta-data. -->
+129        <meta-data
+129-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:104:9-106:33
+130            android:name="flutterEmbedding"
+130-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:105:13-44
+131            android:value="2" />
+131-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:106:13-30
+132
+133        <!-- Health Connect: Metadata pointing to permissions declaration -->
+134        <!-- Required for declaring the health permissions your app intends to use -->
+135        <meta-data
+135-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:110:9-112:58
+136            android:name="health_permissions"
+136-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:111:13-46
+137            android:resource="@xml/health_permissions" />
+137-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:112:13-55
+138
+139        <service
+139-->[:firebase_auth] /Users/jeremy/Development/Oseer/android_companion_app/build/firebase_auth/intermediates/merged_manifest/release/AndroidManifest.xml:8:9-12:19
+140            android:name="com.google.firebase.components.ComponentDiscoveryService"
+140-->[:firebase_auth] /Users/jeremy/Development/Oseer/android_companion_app/build/firebase_auth/intermediates/merged_manifest/release/AndroidManifest.xml:8:18-89
+141            android:directBootAware="true"
+141-->[com.google.firebase:firebase-common:20.4.3] /Users/jeremy/.gradle/caches/transforms-3/74266387a491fee7a996ba407ad890dd/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:32:13-43
+142            android:exported="false" >
+142-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:68:13-37
+143            <meta-data
+143-->[:firebase_auth] /Users/jeremy/Development/Oseer/android_companion_app/build/firebase_auth/intermediates/merged_manifest/release/AndroidManifest.xml:9:13-11:85
+144                android:name="com.google.firebase.components:io.flutter.plugins.firebase.auth.FlutterFirebaseAuthRegistrar"
+144-->[:firebase_auth] /Users/jeremy/Development/Oseer/android_companion_app/build/firebase_auth/intermediates/merged_manifest/release/AndroidManifest.xml:10:17-124
+145                android:value="com.google.firebase.components.ComponentRegistrar" />
+145-->[:firebase_auth] /Users/jeremy/Development/Oseer/android_companion_app/build/firebase_auth/intermediates/merged_manifest/release/AndroidManifest.xml:11:17-82
+146            <meta-data
+146-->[:firebase_core] /Users/jeremy/Development/Oseer/android_companion_app/build/firebase_core/intermediates/merged_manifest/release/AndroidManifest.xml:9:13-11:85
+147                android:name="com.google.firebase.components:io.flutter.plugins.firebase.core.FlutterFirebaseCoreRegistrar"
+147-->[:firebase_core] /Users/jeremy/Development/Oseer/android_companion_app/build/firebase_core/intermediates/merged_manifest/release/AndroidManifest.xml:10:17-124
+148                android:value="com.google.firebase.components.ComponentRegistrar" />
+148-->[:firebase_core] /Users/jeremy/Development/Oseer/android_companion_app/build/firebase_core/intermediates/merged_manifest/release/AndroidManifest.xml:11:17-82
+149            <meta-data
+149-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:69:13-71:85
+150                android:name="com.google.firebase.components:com.google.firebase.auth.FirebaseAuthRegistrar"
+150-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:70:17-109
+151                android:value="com.google.firebase.components.ComponentRegistrar" />
+151-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:71:17-82
+152            <meta-data
+152-->[com.google.firebase:firebase-common-ktx:20.4.3] /Users/jeremy/.gradle/caches/transforms-3/9947283ac0f0685d4706713fe5e9b9c5/transformed/jetified-firebase-common-ktx-20.4.3/AndroidManifest.xml:12:13-14:85
+153                android:name="com.google.firebase.components:com.google.firebase.ktx.FirebaseCommonLegacyRegistrar"
+153-->[com.google.firebase:firebase-common-ktx:20.4.3] /Users/jeremy/.gradle/caches/transforms-3/9947283ac0f0685d4706713fe5e9b9c5/transformed/jetified-firebase-common-ktx-20.4.3/AndroidManifest.xml:13:17-116
+154                android:value="com.google.firebase.components.ComponentRegistrar" />
+154-->[com.google.firebase:firebase-common-ktx:20.4.3] /Users/jeremy/.gradle/caches/transforms-3/9947283ac0f0685d4706713fe5e9b9c5/transformed/jetified-firebase-common-ktx-20.4.3/AndroidManifest.xml:14:17-82
+155            <meta-data
+155-->[com.google.firebase:firebase-common:20.4.3] /Users/jeremy/.gradle/caches/transforms-3/74266387a491fee7a996ba407ad890dd/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:35:13-37:85
+156                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
+156-->[com.google.firebase:firebase-common:20.4.3] /Users/jeremy/.gradle/caches/transforms-3/74266387a491fee7a996ba407ad890dd/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:36:17-109
+157                android:value="com.google.firebase.components.ComponentRegistrar" />
+157-->[com.google.firebase:firebase-common:20.4.3] /Users/jeremy/.gradle/caches/transforms-3/74266387a491fee7a996ba407ad890dd/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:37:17-82
+158        </service>
+159        <!--
+160           Declares a provider which allows us to store files to share in
+161           '.../caches/share_plus' and grant the receiving action access
+162        -->
+163        <provider
+163-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:13:9-21:20
+164            android:name="dev.fluttercommunity.plus.share.ShareFileProvider"
+164-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:14:13-77
+165            android:authorities="com.oseerapp.healthbridge.flutter.share_provider"
+165-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:15:13-74
+166            android:exported="false"
+166-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:16:13-37
+167            android:grantUriPermissions="true" >
+167-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:17:13-47
+168            <meta-data
+168-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:18:13-20:68
+169                android:name="android.support.FILE_PROVIDER_PATHS"
+169-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:19:17-67
+170                android:resource="@xml/flutter_share_file_paths" />
+170-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:20:17-65
+171        </provider>
+172        <!--
+173           This manifest declared broadcast receiver allows us to use an explicit
+174           Intent when creating a PendingItent to be informed of the user's choice
+175        -->
+176        <receiver
+176-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:26:9-32:20
+177            android:name="dev.fluttercommunity.plus.share.SharePlusPendingIntent"
+177-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:27:13-82
+178            android:exported="false" >
+178-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:28:13-37
+179            <intent-filter>
+179-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:29:13-31:29
+180                <action android:name="EXTRA_CHOSEN_COMPONENT" />
+180-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:30:17-65
+180-->[:share_plus] /Users/jeremy/Development/Oseer/android_companion_app/build/share_plus/intermediates/merged_manifest/release/AndroidManifest.xml:30:25-62
+181            </intent-filter>
+182        </receiver>
+183
+184        <activity
+184-->[:url_launcher_android] /Users/jeremy/Development/Oseer/android_companion_app/build/url_launcher_android/intermediates/merged_manifest/release/AndroidManifest.xml:8:9-11:74
+185            android:name="io.flutter.plugins.urllauncher.WebViewActivity"
+185-->[:url_launcher_android] /Users/jeremy/Development/Oseer/android_companion_app/build/url_launcher_android/intermediates/merged_manifest/release/AndroidManifest.xml:9:13-74
+186            android:exported="false"
+186-->[:url_launcher_android] /Users/jeremy/Development/Oseer/android_companion_app/build/url_launcher_android/intermediates/merged_manifest/release/AndroidManifest.xml:10:13-37
+187            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+187-->[:url_launcher_android] /Users/jeremy/Development/Oseer/android_companion_app/build/url_launcher_android/intermediates/merged_manifest/release/AndroidManifest.xml:11:13-71
+188
+189        <service
+189-->[androidx.health.connect:connect-client:1.1.0-alpha11] /Users/jeremy/.gradle/caches/transforms-3/6bf8517e34684d49adda163072882a5a/transformed/jetified-connect-client-1.1.0-alpha11/AndroidManifest.xml:24:9-32:19
+190            android:name="androidx.health.platform.client.impl.sdkservice.HealthDataSdkService"
+190-->[androidx.health.connect:connect-client:1.1.0-alpha11] /Users/jeremy/.gradle/caches/transforms-3/6bf8517e34684d49adda163072882a5a/transformed/jetified-connect-client-1.1.0-alpha11/AndroidManifest.xml:25:13-96
+191            android:enabled="true"
+191-->[androidx.health.connect:connect-client:1.1.0-alpha11] /Users/jeremy/.gradle/caches/transforms-3/6bf8517e34684d49adda163072882a5a/transformed/jetified-connect-client-1.1.0-alpha11/AndroidManifest.xml:26:13-35
+192            android:exported="true" >
+192-->[androidx.health.connect:connect-client:1.1.0-alpha11] /Users/jeremy/.gradle/caches/transforms-3/6bf8517e34684d49adda163072882a5a/transformed/jetified-connect-client-1.1.0-alpha11/AndroidManifest.xml:27:13-36
+193            <intent-filter>
+193-->[androidx.health.connect:connect-client:1.1.0-alpha11] /Users/jeremy/.gradle/caches/transforms-3/6bf8517e34684d49adda163072882a5a/transformed/jetified-connect-client-1.1.0-alpha11/AndroidManifest.xml:29:13-31:29
+194                <action android:name="androidx.health.platform.client.ACTION_BIND_SDK_SERVICE" />
+194-->[androidx.health.connect:connect-client:1.1.0-alpha11] /Users/jeremy/.gradle/caches/transforms-3/6bf8517e34684d49adda163072882a5a/transformed/jetified-connect-client-1.1.0-alpha11/AndroidManifest.xml:30:17-98
+194-->[androidx.health.connect:connect-client:1.1.0-alpha11] /Users/jeremy/.gradle/caches/transforms-3/6bf8517e34684d49adda163072882a5a/transformed/jetified-connect-client-1.1.0-alpha11/AndroidManifest.xml:30:25-95
+195            </intent-filter>
+196        </service>
+197
+198        <activity
+198-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:29:9-46:20
+199            android:name="com.google.firebase.auth.internal.GenericIdpActivity"
+199-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:30:13-80
+200            android:excludeFromRecents="true"
+200-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:31:13-46
+201            android:exported="true"
+201-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:32:13-36
+202            android:launchMode="singleTask"
+202-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:33:13-44
+203            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+203-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:34:13-72
+204            <intent-filter>
+204-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:35:13-45:29
+205                <action android:name="android.intent.action.VIEW" />
+205-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:33:13-65
+205-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:33:21-62
+206
+207                <category android:name="android.intent.category.DEFAULT" />
+207-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:76:17-76
+207-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:76:27-73
+208                <category android:name="android.intent.category.BROWSABLE" />
+208-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:77:17-78
+208-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:77:27-75
+209
+210                <data
+210-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:34:13-44
+211                    android:host="firebase.auth"
+212                    android:path="/"
+213                    android:scheme="genericidp" />
+213-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:34:19-41
+214            </intent-filter>
+215        </activity>
+216        <activity
+216-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:47:9-64:20
+217            android:name="com.google.firebase.auth.internal.RecaptchaActivity"
+217-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:48:13-79
+218            android:excludeFromRecents="true"
+218-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:49:13-46
+219            android:exported="true"
+219-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:50:13-36
+220            android:launchMode="singleTask"
+220-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:51:13-44
+221            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+221-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:52:13-72
+222            <intent-filter>
+222-->[com.google.firebase:firebase-auth:22.3.1] /Users/jeremy/.gradle/caches/transforms-3/dce2a9fc2a0694ba658131c23abfeea6/transformed/jetified-firebase-auth-22.3.1/AndroidManifest.xml:53:13-63:29
+223                <action android:name="android.intent.action.VIEW" />
+223-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:33:13-65
+223-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:33:21-62
+224
+225                <category android:name="android.intent.category.DEFAULT" />
+225-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:76:17-76
+225-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:76:27-73
+226                <category android:name="android.intent.category.BROWSABLE" />
+226-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:77:17-78
+226-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:77:27-75
+227
+228                <data
+228-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:34:13-44
+229                    android:host="firebase.auth"
+230                    android:path="/"
+231                    android:scheme="recaptcha" />
+231-->/Users/jeremy/Development/Oseer/android_companion_app/android/app/src/main/AndroidManifest.xml:34:19-41
+232            </intent-filter>
+233        </activity>
+234
+235        <uses-library
+235-->[androidx.window:window:1.2.0] /Users/jeremy/.gradle/caches/transforms-3/0486d844eefcd038fc5ad5dd387cfc03/transformed/jetified-window-1.2.0/AndroidManifest.xml:23:9-25:40
+236            android:name="androidx.window.extensions"
+236-->[androidx.window:window:1.2.0] /Users/jeremy/.gradle/caches/transforms-3/0486d844eefcd038fc5ad5dd387cfc03/transformed/jetified-window-1.2.0/AndroidManifest.xml:24:13-54
+237            android:required="false" />
+237-->[androidx.window:window:1.2.0] /Users/jeremy/.gradle/caches/transforms-3/0486d844eefcd038fc5ad5dd387cfc03/transformed/jetified-window-1.2.0/AndroidManifest.xml:25:13-37
+238        <uses-library
+238-->[androidx.window:window:1.2.0] /Users/jeremy/.gradle/caches/transforms-3/0486d844eefcd038fc5ad5dd387cfc03/transformed/jetified-window-1.2.0/AndroidManifest.xml:26:9-28:40
+239            android:name="androidx.window.sidecar"
+239-->[androidx.window:window:1.2.0] /Users/jeremy/.gradle/caches/transforms-3/0486d844eefcd038fc5ad5dd387cfc03/transformed/jetified-window-1.2.0/AndroidManifest.xml:27:13-51
+240            android:required="false" />
+240-->[androidx.window:window:1.2.0] /Users/jeremy/.gradle/caches/transforms-3/0486d844eefcd038fc5ad5dd387cfc03/transformed/jetified-window-1.2.0/AndroidManifest.xml:28:13-37
+241
+242        <activity
+242-->[com.google.android.gms:play-services-auth:21.0.0] /Users/jeremy/.gradle/caches/transforms-3/0a598c8c516330d9d8164e9ad9fe5986/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:23:9-27:75
+243            android:name="com.google.android.gms.auth.api.signin.internal.SignInHubActivity"
+243-->[com.google.android.gms:play-services-auth:21.0.0] /Users/jeremy/.gradle/caches/transforms-3/0a598c8c516330d9d8164e9ad9fe5986/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:24:13-93
+244            android:excludeFromRecents="true"
+244-->[com.google.android.gms:play-services-auth:21.0.0] /Users/jeremy/.gradle/caches/transforms-3/0a598c8c516330d9d8164e9ad9fe5986/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:25:13-46
+245            android:exported="false"
+245-->[com.google.android.gms:play-services-auth:21.0.0] /Users/jeremy/.gradle/caches/transforms-3/0a598c8c516330d9d8164e9ad9fe5986/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:26:13-37
+246            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+246-->[com.google.android.gms:play-services-auth:21.0.0] /Users/jeremy/.gradle/caches/transforms-3/0a598c8c516330d9d8164e9ad9fe5986/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:27:13-72
+247        <!--
+248            Service handling Google Sign-In user revocation. For apps that do not integrate with
+249            Google Sign-In, this service will never be started.
+250        -->
+251        <service
+251-->[com.google.android.gms:play-services-auth:21.0.0] /Users/jeremy/.gradle/caches/transforms-3/0a598c8c516330d9d8164e9ad9fe5986/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:33:9-37:51
+252            android:name="com.google.android.gms.auth.api.signin.RevocationBoundService"
+252-->[com.google.android.gms:play-services-auth:21.0.0] /Users/jeremy/.gradle/caches/transforms-3/0a598c8c516330d9d8164e9ad9fe5986/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:34:13-89
+253            android:exported="true"
+253-->[com.google.android.gms:play-services-auth:21.0.0] /Users/jeremy/.gradle/caches/transforms-3/0a598c8c516330d9d8164e9ad9fe5986/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:35:13-36
+254            android:permission="com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION"
+254-->[com.google.android.gms:play-services-auth:21.0.0] /Users/jeremy/.gradle/caches/transforms-3/0a598c8c516330d9d8164e9ad9fe5986/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:36:13-107
+255            android:visibleToInstantApps="true" />
+255-->[com.google.android.gms:play-services-auth:21.0.0] /Users/jeremy/.gradle/caches/transforms-3/0a598c8c516330d9d8164e9ad9fe5986/transformed/jetified-play-services-auth-21.0.0/AndroidManifest.xml:37:13-48
+256
+257        <activity
+257-->[com.google.android.gms:play-services-base:18.0.1] /Users/jeremy/.gradle/caches/transforms-3/d35a1d7571e71948f0774e8113c100a2/transformed/jetified-play-services-base-18.0.1/AndroidManifest.xml:20:9-22:45
+258            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+258-->[com.google.android.gms:play-services-base:18.0.1] /Users/jeremy/.gradle/caches/transforms-3/d35a1d7571e71948f0774e8113c100a2/transformed/jetified-play-services-base-18.0.1/AndroidManifest.xml:20:19-85
+259            android:exported="false"
+259-->[com.google.android.gms:play-services-base:18.0.1] /Users/jeremy/.gradle/caches/transforms-3/d35a1d7571e71948f0774e8113c100a2/transformed/jetified-play-services-base-18.0.1/AndroidManifest.xml:22:19-43
+260            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+260-->[com.google.android.gms:play-services-base:18.0.1] /Users/jeremy/.gradle/caches/transforms-3/d35a1d7571e71948f0774e8113c100a2/transformed/jetified-play-services-base-18.0.1/AndroidManifest.xml:21:19-78
+261
+262        <provider
+262-->[com.google.firebase:firebase-common:20.4.3] /Users/jeremy/.gradle/caches/transforms-3/74266387a491fee7a996ba407ad890dd/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:23:9-28:39
+263            android:name="com.google.firebase.provider.FirebaseInitProvider"
+263-->[com.google.firebase:firebase-common:20.4.3] /Users/jeremy/.gradle/caches/transforms-3/74266387a491fee7a996ba407ad890dd/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:24:13-77
+264            android:authorities="com.oseerapp.healthbridge.firebaseinitprovider"
+264-->[com.google.firebase:firebase-common:20.4.3] /Users/jeremy/.gradle/caches/transforms-3/74266387a491fee7a996ba407ad890dd/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:25:13-72
+265            android:directBootAware="true"
+265-->[com.google.firebase:firebase-common:20.4.3] /Users/jeremy/.gradle/caches/transforms-3/74266387a491fee7a996ba407ad890dd/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:26:13-43
+266            android:exported="false"
+266-->[com.google.firebase:firebase-common:20.4.3] /Users/jeremy/.gradle/caches/transforms-3/74266387a491fee7a996ba407ad890dd/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:27:13-37
+267            android:initOrder="100" />
+267-->[com.google.firebase:firebase-common:20.4.3] /Users/jeremy/.gradle/caches/transforms-3/74266387a491fee7a996ba407ad890dd/transformed/jetified-firebase-common-20.4.3/AndroidManifest.xml:28:13-36
+268
+269        <meta-data
+269-->[com.google.android.gms:play-services-basement:18.3.0] /Users/jeremy/.gradle/caches/transforms-3/5e9fee9573db2a4cb11fd4236bbab154/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:21:9-23:69
+270            android:name="com.google.android.gms.version"
+270-->[com.google.android.gms:play-services-basement:18.3.0] /Users/jeremy/.gradle/caches/transforms-3/5e9fee9573db2a4cb11fd4236bbab154/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:22:13-58
+271            android:value="@integer/google_play_services_version" />
+271-->[com.google.android.gms:play-services-basement:18.3.0] /Users/jeremy/.gradle/caches/transforms-3/5e9fee9573db2a4cb11fd4236bbab154/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:23:13-66
+272
+273        <provider
+273-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/jeremy/.gradle/caches/transforms-3/4668975ef9b91eaeb9ff1aaac0ec2469/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:24:9-32:20
+274            android:name="androidx.startup.InitializationProvider"
+274-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/jeremy/.gradle/caches/transforms-3/4668975ef9b91eaeb9ff1aaac0ec2469/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:25:13-67
+275            android:authorities="com.oseerapp.healthbridge.androidx-startup"
+275-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/jeremy/.gradle/caches/transforms-3/4668975ef9b91eaeb9ff1aaac0ec2469/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:26:13-68
+276            android:exported="false" >
+276-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/jeremy/.gradle/caches/transforms-3/4668975ef9b91eaeb9ff1aaac0ec2469/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:27:13-37
+277            <meta-data
+277-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/jeremy/.gradle/caches/transforms-3/4668975ef9b91eaeb9ff1aaac0ec2469/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:29:13-31:52
+278                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+278-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/jeremy/.gradle/caches/transforms-3/4668975ef9b91eaeb9ff1aaac0ec2469/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:30:17-78
+279                android:value="androidx.startup" />
+279-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/jeremy/.gradle/caches/transforms-3/4668975ef9b91eaeb9ff1aaac0ec2469/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:31:17-49
+280            <meta-data
+280-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
+281                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+281-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
+282                android:value="androidx.startup" />
+282-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
+283        </provider>
+284
+285        <receiver
+285-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
+286            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+286-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
+287            android:directBootAware="false"
+287-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
+288            android:enabled="true"
+288-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
+289            android:exported="true"
+289-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
+290            android:permission="android.permission.DUMP" >
+290-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
+291            <intent-filter>
+291-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
+292                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+292-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
+292-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
+293            </intent-filter>
+294            <intent-filter>
+294-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
+295                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+295-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
+295-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
+296            </intent-filter>
+297            <intent-filter>
+297-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
+298                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+298-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
+298-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
+299            </intent-filter>
+300            <intent-filter>
+300-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
+301                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+301-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
+301-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/jeremy/.gradle/caches/transforms-3/65719543c56d66c3ffd55d14152c67c8/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
+302            </intent-filter>
+303        </receiver> <!-- The activities will be merged into the manifest of the hosting app. -->
+304        <activity
+304-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:18:9-24:45
+305            android:name="com.google.android.play.core.missingsplits.PlayCoreMissingSplitsActivity"
+305-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:19:13-100
+306            android:enabled="false"
+306-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:20:13-36
+307            android:exported="false"
+307-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:21:13-37
+308            android:launchMode="singleInstance"
+308-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:22:13-48
+309            android:process=":playcore_missing_splits_activity"
+309-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:23:13-64
+310            android:stateNotNeeded="true" />
+310-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:24:13-42
+311        <activity
+311-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:25:9-29:65
+312            android:name="com.google.android.play.core.common.PlayCoreDialogWrapperActivity"
+312-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:26:13-93
+313            android:exported="false"
+313-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:27:13-37
+314            android:stateNotNeeded="true"
+314-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:28:13-42
+315            android:theme="@style/Theme.PlayCore.Transparent" /> <!-- The services will be merged into the manifest of the hosting app. -->
+315-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:29:13-62
+316        <service
+316-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:32:9-39:19
+317            android:name="com.google.android.play.core.assetpacks.AssetPackExtractionService"
+317-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:33:13-94
+318            android:enabled="false"
+318-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:34:13-36
+319            android:exported="true" >
+319-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:35:13-36
+320            <meta-data
+320-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:36:13-38:41
+321                android:name="com.google.android.play.core.assetpacks.versionCode"
+321-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:37:17-83
+322                android:value="11003" />
+322-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:38:17-38
+323        </service>
+324        <service
+324-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:40:9-43:40
+325            android:name="com.google.android.play.core.assetpacks.ExtractionForegroundService"
+325-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:41:13-95
+326            android:enabled="false"
+326-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:42:13-36
+327            android:exported="false" />
+327-->[com.google.android.play:core:1.10.3] /Users/jeremy/.gradle/caches/transforms-3/ec1a21ec177d50becae5a8ea981f29e7/transformed/jetified-core-1.10.3/AndroidManifest.xml:43:13-37
+328    </application>
+329
+330</manifest>
