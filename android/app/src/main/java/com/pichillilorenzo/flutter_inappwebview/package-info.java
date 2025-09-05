@@ -1,0 +1,1 @@
+package com.pichillilorenzo.flutter_inappwebview;

@@ -1,0 +1,12 @@
+gradle.projectsLoaded {
+    gradle.rootProject.allprojects { project ->
+        if (project.name == 'flutter_inappwebview') {
+            project.afterEvaluate {
+                if (project.plugins.hasPlugin('com.android.library')) {
+                    def android = project.extensions.getByName("android")
+                    android.namespace = "com.pichillilorenzo.flutter_inappwebview"
+                }
+            }
+        }
+    }
+}

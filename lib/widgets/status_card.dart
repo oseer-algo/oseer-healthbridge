@@ -7,8 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/connection/connection_bloc.dart' as connection;
 import '../blocs/health/health_bloc.dart';
 import '../blocs/health/health_state.dart' as health_state;
-import '../models/helper_models.dart';
-import '../utils/constants.dart';
+import '../models/helper_models.dart'; // Ensure HealthPermissionStatus is defined here
+import '../utils/constants.dart'; // Import constants
 
 class StatusCard extends StatelessWidget {
   final VoidCallback? onTap;
@@ -32,21 +32,24 @@ class StatusCard extends StatelessWidget {
             shadowColor: Colors.black12,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(OseerSpacing.cardRadius),
-              side: BorderSide(
+              side: const BorderSide(
+                // Can be const
                 color: OseerColors.divider,
                 width: 1,
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(OseerSpacing.cardPadding),
+              padding:
+                  const EdgeInsets.all(OseerSpacing.cardPadding), // Use const
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildConnectionStatus(context),
                   const SizedBox(height: OseerSpacing.md),
                   const Divider(color: OseerColors.divider),
                   const SizedBox(height: OseerSpacing.md),
                   _buildWellnessPermissionStatus(context, healthState),
-                  const SizedBox(height: OseerSpacing.md),
+                  // Removed extra SizedBox at the end if not needed for layout
                 ],
               ),
             ),
@@ -79,25 +82,27 @@ class StatusCard extends StatelessWidget {
                     state.status == connection.ConnectionStatus.connected
                         ? 'Connected to Oseer'
                         : state.status == connection.ConnectionStatus.connecting
-                            ? 'Connecting to Oseer...'
+                            ? 'Connecting...'
                             : 'Not Connected',
                     style: OseerTextStyles.bodyRegular.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     state.status == connection.ConnectionStatus.connected
-                        ? 'Your device is linked and syncing'
+                        ? state.deviceName ?? 'Device linked'
                         : state.status == connection.ConnectionStatus.connecting
-                            ? 'Establishing connection...'
-                            : 'Tap to connect your device',
+                            ? 'Establishing link...'
+                            : 'Tap to connect',
                     style: OseerTextStyles.bodySmall,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            Icon(
+            const Icon(
               Icons.chevron_right,
               color: OseerColors.textTertiary,
               size: 20,
@@ -110,70 +115,57 @@ class StatusCard extends StatelessWidget {
 
   Widget _buildWellnessPermissionStatus(
       BuildContext context, health_state.HealthState state) {
-    // Default values
     bool isConnected = false;
     bool isLoading = false;
     bool showWarning = false;
+    bool showError = false;
     String title = 'Wellness Permissions';
-    String subtitle = 'Allow access to wellness data';
+    String subtitle = 'Allow access to sync data';
     HealthPermissionStatus? status;
 
-    // Get status from the state
     if (state is health_state.HealthPermissionsChecked) {
       status = state.authStatus.status;
       isLoading = state.requestStatus == RequestStatus.loading;
-
-      if (status == HealthPermissionStatus.granted) {
-        isConnected = true;
-        title = 'All Wellness Permissions Granted';
-        subtitle = 'Your wellness data is being monitored';
-      } else if (status == HealthPermissionStatus.partiallyGranted) {
-        isConnected = false;
-        showWarning = true;
-        title = 'Wellness Access Partially Granted';
-        subtitle = 'Some wellness features may be limited';
-      } else if (status == HealthPermissionStatus.denied) {
-        isConnected = false;
-        title = 'Wellness Permissions Required';
-        subtitle = 'Tap to allow access to wellness data';
-      } else if (status == HealthPermissionStatus.unavailable) {
-        isConnected = false;
-        title = 'Wellness Services Unavailable';
-        subtitle = 'Limited features available on this device';
-      } else if (status == HealthPermissionStatus.promptingUser) {
-        isLoading = true;
-        title = 'Requesting Permissions...';
-        subtitle = 'Please respond to the system prompt';
-      }
     } else if (state is health_state.HealthDataSynced) {
       status = state.authStatus.status;
-
-      if (status == HealthPermissionStatus.granted) {
-        isConnected = true;
-        title = 'All Wellness Permissions Granted';
-        subtitle = 'Your wellness data is being monitored';
-      } else if (status == HealthPermissionStatus.partiallyGranted) {
-        isConnected = false;
-        showWarning = true;
-        title = 'Wellness Access Partially Granted';
-        subtitle = 'Some wellness features may be limited';
-      } else if (status == HealthPermissionStatus.denied) {
-        isConnected = false;
-        title = 'Wellness Permissions Required';
-        subtitle = 'Tap to allow access to wellness data';
-      } else if (status == HealthPermissionStatus.unavailable) {
-        isConnected = false;
-        title = 'Wellness Services Unavailable';
-        subtitle = 'Limited features available on this device';
-      } else if (status == HealthPermissionStatus.promptingUser) {
-        isLoading = true;
-        title = 'Requesting Permissions...';
-        subtitle = 'Please respond to the system prompt';
-      }
-    } else if (state is health_state.HealthLoading) {
+    } else if (state is health_state.HealthLoading &&
+        (state.message?.toLowerCase().contains('permission') ?? false)) {
       isLoading = true;
-      title = 'Checking Wellness Permissions...';
-      subtitle = 'Please wait while we check your permissions';
+    } else if (state is health_state.HealthError &&
+        (state.message?.toLowerCase().contains('permission') ?? false)) {
+      // *** FIX: Use a valid enum status like denied or unavailable for errors ***
+      status = HealthPermissionStatus
+          .denied; // Or .unavailable or a custom .error if you define it
+      showError = true; // Indicate error state visually
+    }
+
+    // Set UI text based on status
+    if (status == HealthPermissionStatus.granted) {
+      isConnected = true;
+      title = 'Permissions Granted';
+      subtitle = 'Wellness data access enabled';
+    } else if (status == HealthPermissionStatus.partiallyGranted) {
+      isConnected = false;
+      showWarning = true;
+      title = 'Partial Access Granted';
+      subtitle = 'Some data may not sync';
+    } else if (status == HealthPermissionStatus.denied) {
+      isConnected = false;
+      showError = true;
+      title = 'Permissions Required';
+      subtitle = 'Tap to grant access';
+    } else if (status == HealthPermissionStatus.unavailable) {
+      isConnected = false;
+      showWarning = true;
+      title = 'Service Unavailable';
+      subtitle = 'Health Connect/Kit not supported';
+    }
+    // FIXED: Removed reference to non-existent promptingUser enum constant
+    // Default state if status is null and not loading
+    else if (status == null && !isLoading) {
+      isConnected = false;
+      title = 'Check Permissions';
+      subtitle = 'Tap to verify wellness access';
     }
 
     return Row(
@@ -183,31 +175,26 @@ class StatusCard extends StatelessWidget {
           type: 'wellness',
           isLoading: isLoading,
           showWarning: showWarning,
+          showError: showError,
         ),
         const SizedBox(width: OseerSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: OseerTextStyles.bodyRegular.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text(title,
+                  style: OseerTextStyles.bodyRegular
+                      .copyWith(fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis),
               const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: OseerTextStyles.bodySmall,
-              ),
+              Text(subtitle,
+                  style: OseerTextStyles.bodySmall,
+                  overflow: TextOverflow.ellipsis),
             ],
           ),
         ),
-        Icon(
-          Icons.chevron_right,
-          color: OseerColors.textTertiary,
-          size: 20,
-        ),
+        const Icon(Icons.chevron_right,
+            color: OseerColors.textTertiary, size: 20),
       ],
     );
   }
@@ -219,94 +206,61 @@ class StatusCard extends StatelessWidget {
     bool showWarning = false,
     bool showError = false,
   }) {
-    if (isLoading) {
-      return Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(OseerSpacing.buttonRadius),
-        ),
-        child: Center(
-          child: SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(OseerColors.primary),
-            ),
-          ),
-        ),
-      );
-    }
-
+    Widget content;
     Color bgColor;
-    IconData icon;
     Color iconColor;
+    // *** FIX: Declare icon variable with a default value ***
+    IconData icon = Icons.help_outline; // Default icon
 
-    // Error state (red X)
-    if (showError) {
-      bgColor = Colors.red[50]!;
-      iconColor = OseerColors.error;
-      icon = Icons.close;
-    }
-    // Warning state (yellow triangle)
-    else if (showWarning) {
-      bgColor = Colors.amber[50]!;
-      iconColor = OseerColors.warning;
-      icon = Icons.warning_amber_rounded;
-    }
-    // Connected state (green checkmark or relevant icon)
-    else if (isConnected) {
-      bgColor = OseerColors.primary.withOpacity(0.1);
-      iconColor = OseerColors.primary;
-
-      if (type == 'connection') {
-        icon = Icons.link;
-      } else {
-        // wellness
-        icon = Icons.favorite;
-      }
-    }
-    // Disconnected state (gray icon)
-    else {
+    if (isLoading) {
       bgColor = Colors.grey[100]!;
-      iconColor = Colors.grey;
-
-      if (type == 'connection') {
-        icon = Icons.link_off;
+      content = Center(
+          child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(OseerColors.primary))));
+    } else {
+      if (showError) {
+        bgColor = OseerColors.error.withOpacity(0.1);
+        iconColor = OseerColors.error;
+        icon = Icons.error_outline_rounded;
+      } else if (showWarning) {
+        bgColor = OseerColors.warning.withOpacity(0.1);
+        iconColor = OseerColors.warning;
+        icon = Icons.warning_amber_rounded;
+      } else if (isConnected) {
+        bgColor = OseerColors.primary.withOpacity(0.1);
+        iconColor = OseerColors.primary;
+        icon = (type == 'connection')
+            ? Icons.link_rounded
+            : Icons.favorite_rounded;
       } else {
-        // wellness
-        icon = Icons.favorite_border;
+        bgColor = Colors.grey[100]!;
+        iconColor = Colors.grey;
+        icon = (type == 'connection')
+            ? Icons.link_off_rounded
+            : Icons.favorite_border_rounded;
       }
+      content = Icon(icon, color: iconColor, size: 20);
     }
 
-    return Container(
+    Widget container = Container(
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(OseerSpacing.buttonRadius),
-      ),
-      child: Icon(
-        icon,
-        color: iconColor,
-        size: 20,
-      ),
-    )
-        .animate(onPlay: (controller) => controller.repeat(reverse: true))
-        .fadeIn(duration: 300.ms)
-        .then(delay: 2000.ms) // Only animate when status changes
-        .scale(
-          begin: const Offset(1.0, 1.0),
-          end: const Offset(1.05, 1.05),
-          duration: 700.ms,
-        )
-        .then()
-        .scale(
-          begin: const Offset(1.05, 1.05),
-          end: const Offset(1.0, 1.0),
-          duration: 700.ms,
-        );
+          color: bgColor,
+          borderRadius: BorderRadius.circular(OseerSpacing.buttonRadius)),
+      child: content,
+    );
+
+    if (!isLoading) {
+      container = container
+          .animate()
+          .fadeIn(duration: OseerConstants.shortAnimDuration);
+    }
+    return container;
   }
 }

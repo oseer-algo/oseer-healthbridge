@@ -22,62 +22,76 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+def flutterMinSdkVersion = localProperties.getProperty('flutter.minSdkVersion')
+if (flutterMinSdkVersion == null) {
+    flutterMinSdkVersion = '26'
+}
+
 android {
-    namespace "com.oseerapp.healthbridge"
-    compileSdkVersion 35  // Changed back to 35 to match plugin requirements
-    ndkVersion flutter.ndkVersion
+    namespace = "com.oseerapp.healthbridge"
+    compileSdk = 35
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled = true
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
-        jvmTarget = '17'
-    }
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
+        jvmTarget = "1.8"
     }
 
     defaultConfig {
-        applicationId "com.oseerapp.healthbridge"
-        minSdkVersion 26
-        targetSdkVersion 35  // Changed back to 35
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
+        applicationId = "com.oseerapp.healthbridge"
+        minSdk = flutterMinSdkVersion.toInteger()
+        targetSdk = 35
+        versionCode = flutterVersionCode.toInteger()
+        versionName = flutterVersionName
+        multiDexEnabled = true
     }
 
     buildTypes {
         release {
-            // Signing with the debug keys for now
-            signingConfig signingConfigs.debug
-            
-            // Configure minification safely for the Health Connect integration
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // TODO: Add your own signing config for the release build.
+            // Signing with the debug keys for now, so `flutter run --release` works.
+            signingConfig = signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
         }
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.core:core:1.13.1'
+        force 'androidx.core:core-ktx:1.13.1'
+        force 'androidx.media:media:1.7.0'
+    }
+}
+
 flutter {
-    source '../..'
+    source = "../.."
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.20"
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
     
-    // Add Play Core dependency to fix the R8 error
-    implementation 'com.google.android.play:core:1.10.3'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.20"
     
-    // Add Health Connect dependency directly to the app module
-    implementation 'androidx.health.connect:connect-client:1.0.0-alpha11'
-}
-
-// Java toolchain configuration to ensure compatibility
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
+    // AndroidX Core & AppCompat
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    
+    // Activity Result API
+    implementation 'androidx.activity:activity-ktx:1.8.2'
+    implementation 'androidx.fragment:fragment-ktx:1.6.2'
+    
+    // Health Connect - Keeping version 1.1.0-alpha11 as specified
+    implementation 'androidx.health.connect:connect-client:1.1.0-alpha11'
+    
+    // Lifecycle & Coroutines
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
 }

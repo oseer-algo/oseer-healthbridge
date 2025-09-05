@@ -1,178 +1,128 @@
+// lib/utils/theme.dart
+
 import 'package:flutter/material.dart';
 import 'constants.dart';
 
-/// Theme configuration for the app
-class OseerTheme {
-  /// Light theme
-  static ThemeData get lightTheme {
+/// App theme configuration
+class AppTheme {
+  /// Get the main app theme
+  static ThemeData getTheme() {
     return ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: OseerColors.primary,
-        brightness: Brightness.light,
+      primaryColor: OseerColors.primary,
+      primaryColorLight: OseerColors.primaryLight,
+      primaryColorDark: OseerColors.primaryDark,
+      colorScheme: ColorScheme.light(
+        primary: OseerColors.primary,
+        secondary: OseerColors.secondary,
+        error: OseerColors.error,
+        background: OseerColors.background,
+        surface: OseerColors.surface,
       ),
       scaffoldBackgroundColor: OseerColors.background,
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        iconTheme: IconThemeData(color: OseerColors.textPrimary),
         titleTextStyle: TextStyle(
-          color: Colors.black87,
+          color: OseerColors.textPrimary,
           fontSize: 18,
           fontWeight: FontWeight.w600,
-        ),
-        iconTheme: IconThemeData(
-          color: Colors.black87,
+          fontFamily: 'Geist',
         ),
       ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        filled: true,
-        fillColor: Colors.grey.shade100,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-      ),
-      cardTheme: CardTheme(
-        elevation: 4,
-        shadowColor: Colors.black.withOpacity(0.1),
+      cardTheme: CardThemeData(
+        elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(OseerSpacing.cardRadius),
         ),
       ),
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Colors.transparent,
-      ),
-      fontFamily: 'Inter',
-    );
-  }
+      textTheme: TextTheme(
+        // Headings
+        headlineLarge: OseerTextStyles.h1,
+        headlineMedium: OseerTextStyles.h2,
+        headlineSmall: OseerTextStyles.h3,
 
-  /// Dark theme
-  static ThemeData get darkTheme {
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: OseerColors.primary,
-        brightness: Brightness.dark,
-      ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        titleTextStyle: TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-        ),
-        iconTheme: IconThemeData(
-          color: Colors.white,
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
+        // Body text
+        bodyLarge: OseerTextStyles.bodyRegular,
+        bodyMedium: OseerTextStyles.bodyRegular,
+        bodySmall: OseerTextStyles.bodySmall,
+
+        // Other text
+        labelLarge: OseerTextStyles.buttonText,
+        labelMedium: OseerTextStyles.bodySmall,
+        labelSmall: OseerTextStyles.caption,
       ),
       inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
         filled: true,
-        fillColor: Colors.grey.shade800,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(OseerSpacing.inputRadius),
+          borderSide: const BorderSide(color: OseerColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(OseerSpacing.inputRadius),
+          borderSide: const BorderSide(color: OseerColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(OseerSpacing.inputRadius),
+          borderSide: BorderSide(color: OseerColors.primary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(OseerSpacing.inputRadius),
+          borderSide: BorderSide(color: OseerColors.error, width: 1.5),
+        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
         ),
       ),
-      cardTheme: CardTheme(
-        elevation: 4,
-        shadowColor: Colors.black.withOpacity(0.3),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: OseerColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 16,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(OseerSpacing.buttonRadius),
+          ),
+          textStyle: OseerTextStyles.buttonText,
         ),
       ),
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: OseerColors.primary,
+          side: BorderSide(color: OseerColors.primary),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 16,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(OseerSpacing.buttonRadius),
+          ),
+          textStyle: OseerTextStyles.buttonText,
         ),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Colors.transparent,
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: OseerColors.primary,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      dividerTheme: DividerThemeData(
+        color: OseerColors.divider,
+        thickness: 1,
+        space: 1,
       ),
       fontFamily: 'Inter',
     );

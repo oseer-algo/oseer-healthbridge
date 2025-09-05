@@ -1,9 +1,11 @@
-// File path: lib/blocs/health/health_event.dart
+// lib/blocs/health/health_event.dart
 
 import 'package:equatable/equatable.dart';
 
 import '../../models/user_profile.dart';
 
+/// Simplified Health Events - Basic health operations only
+/// Removed complex Digital Twin orchestration events
 abstract class HealthEvent extends Equatable {
   const HealthEvent();
 
@@ -11,58 +13,55 @@ abstract class HealthEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+/// Check current health permissions status
 class CheckHealthPermissionsEvent extends HealthEvent {
   const CheckHealthPermissionsEvent();
+
+  @override
+  String toString() => 'CheckHealthPermissionsEvent';
 }
 
+/// Request health permissions from the user
 class RequestHealthPermissionsEvent extends HealthEvent {
   const RequestHealthPermissionsEvent();
+
+  @override
+  String toString() => 'RequestHealthPermissionsEvent';
 }
 
-class RevokeHealthPermissionsEvent extends HealthEvent {
-  const RevokeHealthPermissionsEvent();
-}
-
+/// Sync health data to the platform
 class SyncHealthDataEvent extends HealthEvent {
-  final bool showLoading;
+  final bool isManual;
+  final String? requestId;
 
-  const SyncHealthDataEvent({this.showLoading = true});
+  const SyncHealthDataEvent({
+    this.isManual = false,
+    this.requestId,
+  });
 
   @override
-  List<Object?> get props => [showLoading];
+  List<Object?> get props => [isManual, requestId];
+
+  @override
+  String toString() =>
+      'SyncHealthDataEvent { isManual: $isManual, requestId: $requestId }';
 }
 
-class RunHealthDiagnosticsEvent extends HealthEvent {
-  const RunHealthDiagnosticsEvent();
-}
-
+/// Generate a connection token with profile data
 class GenerateConnectionTokenEvent extends HealthEvent {
-  final String? userId;
-  final UserProfile? profile;
+  final Map<String, dynamic> profileData;
 
-  const GenerateConnectionTokenEvent({
-    this.userId,
-    this.profile,
-  });
+  const GenerateConnectionTokenEvent({required this.profileData});
 
   @override
-  List<Object?> get props => [userId, profile];
-}
-
-class ValidateConnectionTokenEvent extends HealthEvent {
-  final String token;
-  final String? userId;
-
-  const ValidateConnectionTokenEvent({
-    required this.token,
-    this.userId,
-  });
+  List<Object?> get props => [profileData];
 
   @override
-  List<Object?> get props => [token, userId];
+  String toString() =>
+      'GenerateConnectionTokenEvent { profileData: $profileData }';
 }
 
-// New events for profile handling
+/// Update user profile
 class ProfileUpdatedEvent extends HealthEvent {
   final UserProfile profile;
 
@@ -70,35 +69,39 @@ class ProfileUpdatedEvent extends HealthEvent {
 
   @override
   List<Object?> get props => [profile];
+
+  @override
+  String toString() => 'ProfileUpdatedEvent { profile: $profile }';
 }
 
+/// Check profile completion status
 class CheckProfileStatusEvent extends HealthEvent {
   const CheckProfileStatusEvent();
+
+  @override
+  String toString() => 'CheckProfileStatusEvent';
 }
 
+/// Load profile from storage
 class LoadProfileEvent extends HealthEvent {
   const LoadProfileEvent();
+
+  @override
+  String toString() => 'LoadProfileEvent';
 }
 
-// New events for auto-extraction of profile data
+/// Extract profile data from health services (iOS only)
 class ExtractProfileDataEvent extends HealthEvent {
   const ExtractProfileDataEvent();
-}
-
-class ProfileDataExtractedEvent extends HealthEvent {
-  final UserProfile profile;
-
-  const ProfileDataExtractedEvent({required this.profile});
 
   @override
-  List<Object?> get props => [profile];
+  String toString() => 'ExtractProfileDataEvent';
 }
 
-class ProfileDataExtractionFailedEvent extends HealthEvent {
-  final String error;
-
-  const ProfileDataExtractionFailedEvent({required this.error});
+/// Send heartbeat event
+class SendHeartbeatEvent extends HealthEvent {
+  const SendHeartbeatEvent();
 
   @override
-  List<Object?> get props => [error];
+  String toString() => 'SendHeartbeatEvent';
 }

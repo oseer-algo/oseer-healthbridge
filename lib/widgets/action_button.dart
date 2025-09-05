@@ -26,6 +26,8 @@ class ActionButton extends StatelessWidget {
   final ActionButtonSize size;
   final bool isLoading;
   final bool fullWidth;
+  final double? height; // Added height parameter
+  final double? fontSize; // Added fontSize parameter
 
   const ActionButton({
     Key? key,
@@ -36,6 +38,8 @@ class ActionButton extends StatelessWidget {
     this.size = ActionButtonSize.medium,
     this.isLoading = false,
     this.fullWidth = true,
+    this.height, // Initialize height parameter
+    this.fontSize, // Initialize fontSize parameter
   }) : super(key: key);
 
   @override
@@ -89,35 +93,40 @@ class ActionButton extends StatelessWidget {
     double verticalPadding;
     double horizontalPadding;
     double borderRadius;
-    double fontSize;
+    double actualFontSize;
     double iconSize;
+    double buttonHeight;
 
     switch (size) {
       case ActionButtonSize.small:
         verticalPadding = 8;
         horizontalPadding = 12;
         borderRadius = 8;
-        fontSize = 14;
+        actualFontSize = fontSize ?? 14;
         iconSize = 16;
+        buttonHeight = height ?? 36;
         break;
       case ActionButtonSize.medium:
         verticalPadding = 12;
         horizontalPadding = 20;
         borderRadius = 12;
-        fontSize = 16;
+        actualFontSize = fontSize ?? 16;
         iconSize = 18;
+        buttonHeight = height ?? 44;
         break;
       case ActionButtonSize.large:
         verticalPadding = 16;
         horizontalPadding = 28;
         borderRadius = 14;
-        fontSize = 18;
+        actualFontSize = fontSize ?? 18;
         iconSize = 20;
+        buttonHeight = height ?? 52;
         break;
     }
 
     return Container(
       width: fullWidth ? double.infinity : null,
+      height: buttonHeight, // Use the calculated height
       decoration: type != ActionButtonType.text
           ? BoxDecoration(
               borderRadius: BorderRadius.circular(borderRadius),
@@ -172,7 +181,7 @@ class ActionButton extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Geist',
                       color: textColor,
-                      fontSize: fontSize,
+                      fontSize: actualFontSize,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

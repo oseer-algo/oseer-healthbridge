@@ -1,0 +1,2 @@
+/Users/jeremy/Development/Oseer/android_app_signup_fix/android/app/.cxx/RelWithDebInfo/6e546e3w/arm64-v8a/CMakeFiles/edit_cache.dir
+/Users/jeremy/Development/Oseer/android_app_signup_fix/android/app/.cxx/RelWithDebInfo/6e546e3w/arm64-v8a/CMakeFiles/rebuild_cache.dir

@@ -15,6 +15,13 @@
 -keep class androidx.health.** { *; }
 -keep class com.google.android.libraries.healthdata.** { *; }
 
+# Credential Manager for Google Sign-In
+-if class androidx.credentials.CredentialManager
+-keep class androidx.credentials.playservices.** { *; }
+
+# Google ID
+-keep class com.google.android.libraries.identity.googleid.** { *; }
+
 # Preserve the health permissions file
 -keep class com.oseerapp.healthbridge.R$xml { *; }
 
@@ -33,3 +40,8 @@
 
 # Keep model classes
 -keep class com.oseerapp.healthbridge.models.** { *; }
+
+# Preserve all classes and methods in your app's main package.
+# This prevents ProGuard/R8 from renaming native code that your Flutter
+# platform channels might be trying to call by name.
+-keep class com.oseerapp.healthbridge.** { *; }

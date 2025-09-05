@@ -1,0 +1,2 @@
+/Users/jeremy/Development/Oseer/android_app_signup_fix/android/app/.cxx/Debug/6a1l6x68/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/jeremy/Development/Oseer/android_app_signup_fix/android/app/.cxx/Debug/6a1l6x68/armeabi-v7a/CMakeFiles/rebuild_cache.dir

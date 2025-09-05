@@ -1,84 +1,121 @@
 name: oseer_health_bridge
-description: Oseer HealthBridge - Android companion app for Oseer health platform
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 1.0.0+1
+description: Oseer's HealthBridge Companion App for health data connectivity.
+publish_to: 'none'
+version: 2.8.0+25
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.2
+
+  # UI packages
+  cupertino_icons: ^1.0.6
+  flutter_animate: ^4.5.0
   
   # State management
-  flutter_bloc: ^8.1.3
+  flutter_bloc: ^8.1.4
+  bloc: ^8.1.3
   equatable: ^2.0.5
+  flutter_background_service: ^5.0.5
   
-  # Health integration - Updated version
-  health: ^12.0.0
-  
-  # Authentication
-  google_sign_in: ^6.1.5
-  sign_in_with_apple: ^7.0.0
-  crypto: ^3.0.3
-  firebase_auth: ^4.9.0
-  firebase_core: ^2.15.1
-
-  # Networking
-  dio: ^5.3.2
-  http: ^1.1.0  # Adding http package for debugging
+  # Health platform integration
+  health: ^12.2.0
   
   # Storage
-  shared_preferences: ^2.2.0
+  shared_preferences: ^2.2.2
   
-  # UI & Animation
-  flutter_svg: ^2.0.7
-  lottie: ^2.6.0
-  flutter_animate: ^4.3.0
-  shimmer: ^3.0.0
+  # Device info
+  device_info_plus: ^9.1.2
+  uuid: ^4.3.3
   
-  # Utils
-  url_launcher: ^6.1.14
-  intl: ^0.18.1
-  uuid: ^4.0.0
-  logger: ^2.0.2
-  package_info_plus: ^4.1.0
-  device_info_plus: ^9.0.3
-  app_links: ^3.4.5
-  qr_flutter: ^4.1.0
-  permission_handler: ^10.4.3
+  # Network & connectivity
+  http: ^1.2.0
+  connectivity_plus: ^5.0.2
   
-  # Adding share_plus for sharing functionality
-  share_plus: ^7.1.0
+  # Platform integration
+  url_launcher: ^6.2.5
+  permission_handler: ^11.3.0
+  app_links: ^3.5.0
+  webview_flutter: ^4.5.0
+  
+  # Security & hashing
+  crypto: ^3.0.3
+  
+  # Utility
+  intl: ^0.19.0
+  collection: ^1.18.0
+  logger: ^2.0.2+1
+  path_provider: ^2.1.2
+  package_info_plus: ^8.3.0
+  flutter_secure_storage: ^9.2.4
+  flutter_dotenv: ^5.1.0
+  flutter_local_notifications: ^17.2.3
+  synchronized: ^3.1.0+1
+
+  # We must use the git ref for workmanager to be compatible with the modern Flutter SDK.
+  workmanager:
+    git:
+      url: https://github.com/fluttercommunity/flutter_workmanager.git
+      path: workmanager
+      ref: main
+
+  # Authentication - Supabase (updated to v2)
+  supabase_flutter: ^2.0.0
+  local_auth: ^2.1.6
+  bloc_concurrency: ^0.2.5
+  stream_transform: ^2.1.1
+  lottie: ^3.3.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
-  build_runner: ^2.4.6
-  flutter_launcher_icons: ^0.13.1
+  flutter_lints: ^3.0.0
+  bloc_test: ^9.1.6
+  mockito: ^5.4.4
+  build_runner: ^2.4.8
 
-# Flutter app icon configuration
-flutter_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/images/app_icon.png"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/app_icon_adaptive.png"
+dependency_overrides:
+  health: 13.0.1
+  permission_handler: 11.3.1
+
 
 flutter:
   uses-material-design: true
   
   assets:
     - assets/images/
+    - assets/icons/
+    - assets/animations/
+    - assets/icons/google_logo.png
+    - .env
     
   fonts:
+    - family: Geist
+      fonts:
+        - asset: assets/fonts/Geist-Thin.woff2
+          weight: 100
+        - asset: assets/fonts/Geist-ExtraLight.woff2
+          weight: 200
+        - asset: assets/fonts/Geist-Light.woff2
+          weight: 300
+        - asset: assets/fonts/Geist-Regular.woff2
+          weight: 400
+        - asset: assets/fonts/Geist-Medium.woff2
+          weight: 500
+        - asset: assets/fonts/Geist-SemiBold.woff2
+          weight: 600
+        - asset: assets/fonts/Geist-Bold.woff2
+          weight: 700
+        - asset: assets/fonts/Geist-ExtraBold.woff2
+          weight: 800
+        - asset: assets/fonts/Geist-Black.woff2
+          weight: 900
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
         - asset: assets/fonts/Inter-Medium.ttf
           weight: 500
         - asset: assets/fonts/Inter-SemiBold.ttf

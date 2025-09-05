@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string-array name="health_permissions" tools:ignore="MissingTranslation">
+        <!-- Activity & Exercise -->
+        <item>androidx.health.permission.Steps.READ</item>
+        <item>androidx.health.permission.Distance.READ</item>
+        <item>androidx.health.permission.ActiveCaloriesBurned.READ</item>
+        <item>androidx.health.permission.TotalCaloriesBurned.READ</item>
+        <item>androidx.health.permission.FloorsClimbed.READ</item>
+        <item>androidx.health.permission.ExerciseSession.READ</item>
+        <item>androidx.health.permission.BasalMetabolicRate.READ</item>
+
+        <!-- Body Measurements -->
+        <item>androidx.health.permission.BodyFat.READ</item>
+        <item>androidx.health.permission.Height.READ</item>
+        <item>androidx.health.permission.Weight.READ</item>
+        <item>androidx.health.permission.LeanBodyMass.READ</item>
+        <item>androidx.health.permission.BodyWaterMass.READ</item>
+
+        <!-- Cycle Tracking & Nutrition -->
+        <item>androidx.health.permission.MenstruationFlow.READ</item>
+        <item>androidx.health.permission.Hydration.READ</item>
+        <item>androidx.health.permission.Nutrition.READ</item>
+
+        <!-- Sleep -->
+        <item>androidx.health.permission.SleepSession.READ</item>
+        <item>androidx.health.permission.SleepStage.READ</item>
+        
+        <!-- Vitals -->
+        <item>androidx.health.permission.BloodGlucose.READ</item>
+        <item>androidx.health.permission.BloodPressure.READ</item>
+        <item>androidx.health.permission.BodyTemperature.READ</item>
+        <item>androidx.health.permission.HeartRate.READ</item>
+        <item>androidx.health.permission.HeartRateVariability.READ</item>
+        <item>androidx.health.permission.OxygenSaturation.READ</item>
+        <item>androidx.health.permission.RespiratoryRate.READ</item>
+        <item>androidx.health.permission.RestingHeartRate.READ</item>
+    </string-array>
+</resources>

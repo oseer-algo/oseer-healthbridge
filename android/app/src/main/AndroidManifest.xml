@@ -2,92 +2,131 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Essential Permissions -->
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
+    <!-- =================== STANDARD PERMISSIONS =================== -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
+    
+    <!-- ADDED: This permission is required for the dataSync foreground service type on Android 14+ -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
-    <!-- Health Connect Read Permissions -->
-    <uses-permission android:name="android.permission.health.READ_STEPS"/>
-    <uses-permission android:name="android.permission.health.READ_HEART_RATE"/>
-    <uses-permission android:name="android.permission.health.READ_SLEEP"/>
-    <uses-permission android:name="android.permission.health.READ_WEIGHT"/>
-    <uses-permission android:name="android.permission.health.READ_HEIGHT"/>
-    <uses-permission android:name="android.permission.health.READ_BLOOD_GLUCOSE"/>
-    <uses-permission android:name="android.permission.health.READ_BODY_TEMPERATURE"/>
-    <uses-permission android:name="android.permission.health.READ_BLOOD_OXYGEN"/>
-    <uses-permission android:name="android.permission.health.READ_EXERCISE"/>
-    <uses-permission android:name="android.permission.health.READ_BLOOD_PRESSURE"/>
-    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED"/>
-    <uses-permission android:name="android.permission.health.READ_DISTANCE"/>
-    <!-- Add other specific health read/write permissions as needed -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
-    <!-- Package Visibility and Intent Queries -->
+    
+    <!-- =================== HEALTH CONNECT PERMISSIONS =================== -->
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+    
+    <!-- Activity & Exercise -->
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
+    <uses-permission android:name="android.permission.health.READ_BASAL_METABOLIC_RATE" />
+    <uses-permission android:name="android.permission.health.READ_DISTANCE" />
+    <uses-permission android:name="android.permission.health.READ_FLOORS_CLIMBED" />
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
+
+    <!-- Body Measurements -->
+    <uses-permission android:name="android.permission.health.READ_BODY_FAT" />
+    <uses-permission android:name="android.permission.health.READ_HEIGHT" />
+    <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+    <uses-permission android:name="android.permission.health.READ_LEAN_BODY_MASS" />
+    <uses-permission android:name="android.permission.health.READ_BODY_WATER_MASS" />
+
+    <!-- Cycle Tracking & Nutrition -->
+    <uses-permission android:name="android.permission.health.READ_MENSTRUATION" />
+    <uses-permission android:name="android.permission.health.READ_HYDRATION" />
+    <uses-permission android:name="android.permission.health.READ_NUTRITION" />
+
+    <!-- Sleep -->
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+
+    <!-- Vitals -->
+    <uses-permission android:name="android.permission.health.READ_BLOOD_GLUCOSE" />
+    <uses-permission android:name="android.permission.health.READ_BLOOD_PRESSURE" />
+    <uses-permission android:name="android.permission.health.READ_BODY_TEMPERATURE" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY" />
+    <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION" />
+    <uses-permission android:name="android.permission.health.READ_RESPIRATORY_RATE" />
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
+
+    <!-- =================== PACKAGE VISIBILITY & INTENT QUERIES =================== -->
     <queries>
-        <!-- Query for Health Connect SDK -->
+        <!-- Required to check for Health Connect installation -->
         <package android:name="com.google.android.apps.healthdata" />
+        <!-- Required to launch the Health Connect permission dialog -->
         <intent>
-            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            <action android:name="androidx.health.ACTION_HEALTH_CONNECT_SETTINGS" />
         </intent>
-        <!-- Query for URL Launcher -->
+
+        <!-- Required to handle deep links for Supabase Auth and custom handoff -->
         <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="https" />
+          <action android:name="android.intent.action.VIEW" />
+          <category android:name="android.intent.category.BROWSABLE" />
+          <data android:scheme="https" />
         </intent>
-        <!-- Add other intent queries if needed (e.g., for http, mailto, tel) -->
     </queries>
 
-    <!-- Enable onBackInvokedCallback for improved back navigation (API 33+) -->
     <application
-        android:label="Oseer Health Bridge"
-        android:name="${applicationName}"
+        android:label="Oseer HealthBridge"
         android:icon="@mipmap/ic_launcher"
-        android:enableOnBackInvokedCallback="true">
+        android:name="${applicationName}"
+        android:enableOnBackInvokedCallback="true"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
 
-        <!-- Declare optional dependency on Health Connect -->
-        <uses-library android:name="android.health.connect" android:required="false" />
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
+        <meta-data
+            android:name="com.google.android.apps.healthdata.PERMISSIONS_ARRAY"
+            android:resource="@array/health_permissions" />
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
 
-            <!-- Specifies an Android theme to apply to this Activity as soon as
-                 the Android process has started. This theme is visible to the user
-                 while the Flutter UI initializes. After that, this theme continues
-                 to determine the Window background behind the Flutter UI. -->
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
 
-            <!-- Main Launcher Intent Filter -->
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep Link Intent Filter -->
+            <!-- Intent Filter #1: For Supabase's PKCE Auth Flow -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <!-- App's custom deep link URI scheme -->
-                <data android:scheme="healthbridge" />
+                <data android:scheme="oseerbridge" android:host="login-callback" />
             </intent-filter>
 
-            <!-- Health Connect: Intent Filter for Permissions Rationale -->
-            <!-- This is required by the Health Connect SDK -->
+            <!-- Intent Filter #2: For Oseer's Custom App Handoffs -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Link for the initial connection -->
+                <data android:scheme="oseerbridge" android:host="onboarding" />
+                <!-- Another custom link you had defined -->
+                <data android:scheme="oseer" android:host="dashboard" />
+            </intent-filter>
+
             <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
         </activity>
 
-        <!-- Health Connect: Activity Alias for Permission Usage -->
-        <!-- Required for viewing permission usage in system settings -->
         <activity-alias
             android:name="ViewPermissionUsageActivity"
             android:exported="true"
@@ -99,17 +138,10 @@
             </intent-filter>
         </activity-alias>
 
-        <!-- Flutter Embedding Meta-Data -->
-        <!-- Do not delete this meta-data. -->
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
+        <!-- THIS IS THE CRITICAL FIX: Add the service definition with its type -->
+        <service
+            android:name="id.flutter.flutter_background_service.BackgroundService"
+            android:foregroundServiceType="dataSync" />
 
-        <!-- Health Connect: Metadata pointing to permissions declaration -->
-        <!-- Required for declaring the health permissions your app intends to use -->
-        <meta-data
-            android:name="health_permissions"
-            android:resource="@xml/health_permissions" />
-            
     </application>
 </manifest>

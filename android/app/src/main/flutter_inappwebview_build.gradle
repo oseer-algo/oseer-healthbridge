@@ -1,0 +1,5 @@
+gradle.beforeProject { project ->
+    if (project.name == 'flutter_inappwebview') {
+        project.android.namespace "com.pichillilorenzo.flutter_inappwebview"
+    }
+}

@@ -1,33 +1,26 @@
-// File path: lib/models/user_profile.dart
+// lib/models/user_profile.dart
+import 'package:equatable/equatable.dart';
 
-/// Model class for user profile information
-class UserProfile {
-  /// User's full name
+import '../services/logger_service.dart';
+
+/// User profile data model with validation rules
+class UserProfile extends Equatable {
+  final String userId;
   final String name;
-
-  /// User's email address
   final String email;
-
-  /// Optional phone number
   final String? phone;
-
-  /// Optional age
   final int? age;
-
-  /// Optional gender (male, female, other, prefer not to say)
   final String? gender;
-
-  /// Optional height in cm
   final double? height;
-
-  /// Optional weight in kg
   final double? weight;
-
-  /// Optional activity level
   final String? activityLevel;
+  final String? deviceId;
+  final String? platformType;
+  final String? deviceModel;
+  final String? osVersion;
 
-  /// Constructor
-  UserProfile({
+  const UserProfile({
+    required this.userId,
     required this.name,
     required this.email,
     this.phone,
@@ -36,42 +29,15 @@ class UserProfile {
     this.height,
     this.weight,
     this.activityLevel,
+    this.deviceId,
+    this.platformType,
+    this.deviceModel,
+    this.osVersion,
   });
 
-  /// Create a profile from JSON
-  factory UserProfile.fromJson(Map<String, dynamic> json) {
-    return UserProfile(
-      name: json['name'] as String,
-      email: json['email'] as String,
-      phone: json['phone'] as String?,
-      age: json['age'] != null ? int.tryParse(json['age'].toString()) : null,
-      gender: json['gender'] as String?,
-      height: json['height'] != null
-          ? double.tryParse(json['height'].toString())
-          : null,
-      weight: json['weight'] != null
-          ? double.tryParse(json['weight'].toString())
-          : null,
-      activityLevel: json['activity_level'] as String?,
-    );
-  }
-
-  /// Convert profile to JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'email': email,
-      if (phone != null) 'phone': phone,
-      if (age != null) 'age': age,
-      if (gender != null) 'gender': gender,
-      if (height != null) 'height': height,
-      if (weight != null) 'weight': weight,
-      if (activityLevel != null) 'activity_level': activityLevel,
-    };
-  }
-
-  /// Create a copy of this profile with modified fields
+  /// Copy with method for creating updated instances
   UserProfile copyWith({
+    String? userId,
     String? name,
     String? email,
     String? phone,
@@ -80,8 +46,13 @@ class UserProfile {
     double? height,
     double? weight,
     String? activityLevel,
+    String? deviceId,
+    String? platformType,
+    String? deviceModel,
+    String? osVersion,
   }) {
     return UserProfile(
+      userId: userId ?? this.userId,
       name: name ?? this.name,
       email: email ?? this.email,
       phone: phone ?? this.phone,
@@ -90,46 +61,167 @@ class UserProfile {
       height: height ?? this.height,
       weight: weight ?? this.weight,
       activityLevel: activityLevel ?? this.activityLevel,
+      deviceId: deviceId ?? this.deviceId,
+      platformType: platformType ?? this.platformType,
+      deviceModel: deviceModel ?? this.deviceModel,
+      osVersion: osVersion ?? this.osVersion,
     );
   }
 
-  /// Create a profile with minimal information
-  static UserProfile minimal(String name, String email) {
+  /// Convert from JSON
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
-      name: name,
-      email: email,
+      userId: json['user_id'] as String? ?? json['userId'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      phone: json['phone'] as String?,
+      age: json['age'] as int?,
+      gender: json['gender'] as String?,
+      height:
+          json['height'] != null ? (json['height'] as num).toDouble() : null,
+      weight:
+          json['weight'] != null ? (json['weight'] as num).toDouble() : null,
+      activityLevel:
+          json['activity_level'] as String? ?? json['activityLevel'] as String?,
+      deviceId: json['device_id'] as String? ?? json['deviceId'] as String?,
+      platformType:
+          json['platform_type'] as String? ?? json['platformType'] as String?,
+      deviceModel:
+          json['device_model'] as String? ?? json['deviceModel'] as String?,
+      osVersion: json['os_version'] as String? ?? json['osVersion'] as String?,
     );
   }
 
-  /// Check if the profile has enough information for token generation
-  bool hasRequiredInfo() {
-    return name.isNotEmpty && email.isNotEmpty;
+  /// Convert to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'user_id': userId,
+      'name': name,
+      'email': email,
+      if (phone != null) 'phone': phone,
+      if (age != null) 'age': age,
+      if (gender != null) 'gender': gender,
+      if (height != null) 'height': height,
+      if (weight != null) 'weight': weight,
+      if (activityLevel != null) 'activity_level': activityLevel,
+      if (deviceId != null) 'device_id': deviceId,
+      if (platformType != null) 'platform_type': platformType,
+      if (deviceModel != null) 'device_model': deviceModel,
+      if (osVersion != null) 'os_version': osVersion,
+    };
   }
 
-  /// Load profile from SharedPreferences
-  static UserProfile? fromPrefs(Map<String, dynamic> data) {
-    if (!data.containsKey('name') || !data.containsKey('email')) {
-      return null;
-    }
+  /// Check if profile has all expected fields from server
+  bool isServerDataComplete() {
+    // More lenient check for server data - allows missing optional fields
+    final serverRequiredFields = {
+      'userId': userId.isNotEmpty,
+      'name': name.isNotEmpty,
+      'email': email.isNotEmpty && hasValidEmail(),
+    };
 
-    return UserProfile(
-      name: data['name'] as String,
-      email: data['email'] as String,
-      phone: data['phone'] as String?,
-      age: data['age'] != null ? int.tryParse(data['age'].toString()) : null,
-      gender: data['gender'] as String?,
-      height: data['height'] != null
-          ? double.tryParse(data['height'].toString())
-          : null,
-      weight: data['weight'] != null
-          ? double.tryParse(data['weight'].toString())
-          : null,
-      activityLevel: data['activity_level'] as String?,
-    );
+    final serverExpectedFields = {
+      'age': age != null && age! > 0 && age! <= 120,
+      'gender': gender != null && gender!.isNotEmpty,
+      'height': height != null && height! >= 50 && height! <= 250,
+      'weight': weight != null && weight! >= 20 && weight! <= 500,
+      'activityLevel': activityLevel != null && activityLevel!.isNotEmpty,
+    };
+
+    // Must have all required fields
+    final hasRequiredFields =
+        serverRequiredFields.values.every((isValid) => isValid);
+
+    // Count how many expected fields we have
+    final expectedFieldCount =
+        serverExpectedFields.values.where((isValid) => isValid).length;
+
+    // Consider complete if we have required fields and at least 3 out of 5 expected fields
+    final isComplete = hasRequiredFields && expectedFieldCount >= 3;
+
+    OseerLogger.debug(
+        'Profile server data check - required: $hasRequiredFields, expected: $expectedFieldCount/5, complete: $isComplete');
+
+    return isComplete;
   }
 
-  /// Check if the profile is complete with recommended fields
+  /// Get list of fields that are expected but missing from server data
+  List<String> getMissingFields() {
+    final missing = <String>[];
+
+    // Check required fields
+    if (userId.isEmpty) missing.add('userId');
+    if (name.isEmpty) missing.add('name');
+    if (email.isEmpty || !hasValidEmail()) missing.add('email');
+
+    // Check expected fields with validation
+    if (age == null || age! <= 0 || age! > 120) missing.add('age');
+    if (gender == null || gender!.isEmpty) missing.add('gender');
+    if (height == null || height! < 50 || height! > 250) missing.add('height');
+    if (weight == null || weight! < 20 || weight! > 500) missing.add('weight');
+    if (activityLevel == null || activityLevel!.isEmpty)
+      missing.add('activityLevel');
+
+    return missing;
+  }
+
+  /// Check if profile is complete based on required fields for app functionality
   bool isComplete() {
-    return name.isNotEmpty && email.isNotEmpty && age != null && gender != null;
+    final conditions = {
+      'userId': userId.isNotEmpty,
+      'name': name.isNotEmpty,
+      'email': email.isNotEmpty,
+      'age': age != null,
+      'gender': gender != null,
+      'height': height != null,
+      'weight': weight != null,
+      'activityLevel': activityLevel != null,
+    };
+
+    // Log which conditions are failing for debugging
+    conditions.forEach((field, isValid) {
+      if (!isValid) {
+        OseerLogger.debug('Profile incomplete: missing $field');
+      }
+    });
+
+    return conditions.values.every((isValid) => isValid);
+  }
+
+  /// Check if profile has critical fields for wellness features
+  bool hasRequiredHealthInfo() {
+    return height != null && weight != null && age != null;
+  }
+
+  /// Validate email format
+  bool hasValidEmail() {
+    return email.contains('@') && email.contains('.');
+  }
+
+  /// Check if profile needs update
+  bool needsUpdate() {
+    return !isComplete() || !hasValidEmail();
+  }
+
+  @override
+  List<Object?> get props => [
+        userId,
+        name,
+        email,
+        phone,
+        age,
+        gender,
+        height,
+        weight,
+        activityLevel,
+        deviceId,
+        platformType,
+        deviceModel,
+        osVersion,
+      ];
+
+  @override
+  String toString() {
+    return 'UserProfile(userId: $userId, name: $name, email: $email, age: $age, gender: $gender)';
   }
 }

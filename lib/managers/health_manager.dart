@@ -1,749 +1,1159 @@
-// File path: lib/managers/health_manager.dart
-
+// lib/managers/health_manager.dart
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:health/health.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
-import '../models/health_data.dart';
 import '../models/helper_models.dart';
 import '../models/user_profile.dart';
-import '../services/api_service.dart';
+import '../models/sync_progress.dart';
+import '../services/api_service.dart' as api;
 import '../services/logger_service.dart';
+import '../services/notification_service.dart';
 import '../utils/constants.dart';
+import 'health_permission_manager.dart';
 
-/// Manager for wellness data collection - only collects data, no processing
-class HealthManager {
-  final ApiService _apiService;
-  final SharedPreferences _prefs;
-  final Health _health = Health();
-  final Uuid _uuid = const Uuid();
-  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
+const double _fetchWeight = 0.25; // 25%
+const double _processWeight = 0.05; // 5%
+const double _uploadWeight = 0.70; // 70%
 
-  // Health data timespan - collect last 90 days of data
-  final Duration _dataTimespan = const Duration(days: 90);
+class SyncState {
+  final int totalDaysToSync;
+  final int chunkSizeInDays;
+  final int lastCompletedChunk;
 
-  // Base types of health data to collect (will be filtered by availability)
-  final List<HealthDataType> _baseTypes = [
-    HealthDataType.STEPS,
-    HealthDataType.HEART_RATE,
-    HealthDataType.SLEEP_ASLEEP,
-    HealthDataType.SLEEP_AWAKE,
-    HealthDataType.WEIGHT,
-    HealthDataType.HEIGHT,
-    HealthDataType.BODY_TEMPERATURE,
-    HealthDataType.BLOOD_OXYGEN,
-    HealthDataType.ACTIVE_ENERGY_BURNED,
-    HealthDataType.WORKOUT,
-    // Optional types that may not be available on all devices
-    // These will be filtered by device compatibility
-    HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
-    HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
-    HealthDataType.BLOOD_GLUCOSE,
-  ];
+  SyncState({
+    required this.totalDaysToSync,
+    required this.chunkSizeInDays,
+    this.lastCompletedChunk = -1,
+  });
 
-  // Explicitly excluded types that are known to cause issues
-  final List<HealthDataType> _excludedTypes = [
-    // These types cause issues on many devices and should be avoided
-    HealthDataType.HEART_RATE_VARIABILITY_SDNN,
-    HealthDataType.SLEEP_IN_BED,
-    HealthDataType.DISTANCE_WALKING_RUNNING,
-  ];
+  Map<String, dynamic> toJson() => {
+        'totalDaysToSync': totalDaysToSync,
+        'chunkSizeInDays': chunkSizeInDays,
+        'lastCompletedChunk': lastCompletedChunk,
+      };
 
-  /// Creates a new HealthManager
-  HealthManager(this._apiService, this._prefs);
-
-  /// Checks if Health Connect permissions are granted
-  Future<HealthAuthStatus> checkWellnessPermissions() async {
-    try {
-      OseerLogger.info('Checking Health Connect permissions...');
-
-      // Check if Health Connect is available
-      final isAvailable = await isWellnessConnectAvailable();
-      if (!isAvailable) {
-        OseerLogger.info('Health Connect is not available on this device');
-        return const HealthAuthStatus(
-          status: HealthPermissionStatus.unavailable,
-          grantedPermissions: [],
-          message: 'Health Connect is not available on this device',
-        );
-      }
-
-      // Determine which types are actually available on this device
-      final availableTypes = await _getDeviceSupportedDataTypes();
-      if (availableTypes.isEmpty) {
-        OseerLogger.warning(
-            'No supported health data types found on this device');
-        return const HealthAuthStatus(
-          status: HealthPermissionStatus.unavailable,
-          grantedPermissions: [],
-          message: 'No supported health data types found on this device',
-        );
-      }
-
-      // Check permissions for available types
-      List<String> grantedTypes = [];
-      bool allGranted = false;
-      bool anyGranted = false;
-
-      try {
-        final permissionsResult = await _health.hasPermissions(availableTypes);
-        OseerLogger.info('Permissions check result: $permissionsResult');
-
-        if (permissionsResult == true) {
-          allGranted = true;
-          grantedTypes = availableTypes.map((e) => e.toString()).toList();
-          anyGranted = true;
-        }
-      } catch (e) {
-        OseerLogger.warning('Error with comprehensive permissions check', e);
-        // Continue with individual checks
-      }
-
-      // If the comprehensive check didn't confirm all permissions, check individually
-      if (!allGranted) {
-        for (final type in availableTypes) {
-          try {
-            final hasPermission = await _health.hasPermissions([type]);
-            if (hasPermission == true) {
-              grantedTypes.add(type.toString());
-              anyGranted = true;
-            }
-          } catch (e) {
-            OseerLogger.warning(
-                'Error checking permission for ${type.toString()}', e);
-          }
-        }
-      }
-
-      // Determine the overall status
-      if (allGranted) {
-        return HealthAuthStatus(
-          status: HealthPermissionStatus.granted,
-          grantedPermissions: grantedTypes,
-        );
-      } else if (anyGranted) {
-        return HealthAuthStatus(
-          status: HealthPermissionStatus.partiallyGranted,
-          grantedPermissions: grantedTypes,
-        );
-      } else {
-        return const HealthAuthStatus(
-          status: HealthPermissionStatus.denied,
-          grantedPermissions: [],
-        );
-      }
-    } catch (e) {
-      OseerLogger.error('Error checking health permissions', e);
-      return HealthAuthStatus(
-        status: HealthPermissionStatus.denied,
-        grantedPermissions: [],
-        message: 'Error checking permissions: ${e.toString()}',
+  factory SyncState.fromJson(Map<String, dynamic> json) => SyncState(
+        totalDaysToSync: json['totalDaysToSync'] as int,
+        chunkSizeInDays: json['chunkSizeInDays'] as int,
+        lastCompletedChunk: json['lastCompletedChunk'] as int,
       );
+
+  SyncState copyWith({int? lastCompletedChunk}) {
+    return SyncState(
+      totalDaysToSync: totalDaysToSync,
+      chunkSizeInDays: chunkSizeInDays,
+      lastCompletedChunk: lastCompletedChunk ?? this.lastCompletedChunk,
+    );
+  }
+}
+
+class ProcessedData {
+  final List<Map<String, dynamic>> metrics;
+  final List<Map<String, dynamic>> activities;
+
+  ProcessedData({required this.metrics, required this.activities});
+}
+
+class HealthManager {
+  final Health _health;
+  final api.ApiService _apiService;
+  final SharedPreferences _prefs;
+  final DeviceInfoPlugin _deviceInfo;
+  final NotificationService _notificationService;
+
+  static const MethodChannel _channel =
+      MethodChannel('com.oseerapp.healthbridge/health');
+
+  HealthAuthStatus? _healthAuthStatus;
+  DateTime? _lastSyncTime;
+  String? _deviceId;
+
+  String? _deviceBrand;
+  String? _deviceModel;
+  String? _deviceOsVersion;
+
+  List<String> _cachedGrantedPermissions = [];
+  DateTime? _lastPermissionCheck;
+
+  // Add cancellation support
+  bool _syncCancelled = false;
+
+  // Add property for last sync message
+  String? lastSyncMessage;
+
+  // Create a public StreamController for progress updates.
+  final _progressController = StreamController<SyncProgress>.broadcast();
+
+  // Expose the stream for widgets to listen to.
+  Stream<SyncProgress> get onboardingSyncProgressStream =>
+      _progressController.stream;
+
+  HealthManager({
+    required Health health,
+    required api.ApiService apiService,
+    required SharedPreferences prefs,
+    required DeviceInfoPlugin deviceInfo,
+    required NotificationService notificationService,
+  })  : _health = health,
+        _apiService = apiService,
+        _prefs = prefs,
+        _deviceInfo = deviceInfo,
+        _notificationService = notificationService {
+    _initialize();
+  }
+
+  api.ApiService get apiService => _apiService;
+
+  Future<void> _initialize() async {
+    final lastSyncStr = _prefs.getString(OseerConstants.keyLastSync);
+    if (lastSyncStr != null) {
+      _lastSyncTime = DateTime.tryParse(lastSyncStr)?.toLocal();
+    }
+    await getDeviceId();
+    await _loadDeviceInfo();
+    OseerLogger.debug(
+        'HealthManager initialized. Device: $_deviceBrand $_deviceModel, OS: $_deviceOsVersion');
+  }
+
+  Future<void> _loadDeviceInfo() async {
+    try {
+      if (kIsWeb) return;
+      if (Platform.isAndroid) {
+        final androidInfo = await _deviceInfo.androidInfo;
+        _deviceBrand = androidInfo.brand;
+        _deviceModel = androidInfo.model;
+        _deviceOsVersion = androidInfo.version.release;
+      } else if (Platform.isIOS) {
+        final iosInfo = await _deviceInfo.iosInfo;
+        _deviceBrand = 'Apple';
+        _deviceModel = iosInfo.model;
+        _deviceOsVersion = iosInfo.systemVersion;
+      }
+    } catch (e, s) {
+      OseerLogger.error('Failed to load device information', e, s);
     }
   }
 
-  /// Get available data types for this device
-  Future<List<HealthDataType>> _getDeviceSupportedDataTypes() async {
-    final supportedTypes = <HealthDataType>[];
-
-    // Filter out known problematic types
-    final typesToCheck =
-        _baseTypes.where((type) => !_excludedTypes.contains(type)).toList();
-
-    // Check each type individually for support
-    for (final type in typesToCheck) {
+  Future<String?> getDeviceId() async {
+    if (_deviceId != null) return _deviceId!;
+    _deviceId = _prefs.getString(OseerConstants.keyDeviceId);
+    if (_deviceId == null) {
+      OseerLogger.info('Device ID not found, generating new one.');
       try {
-        // Try to check permission for this type to see if it's supported
-        await _health.hasPermissions([type]);
-        supportedTypes.add(type);
+        if (Platform.isAndroid) {
+          final androidInfo = await _deviceInfo.androidInfo;
+          _deviceId = 'android-${androidInfo.id}';
+        } else if (Platform.isIOS) {
+          final iosInfo = await _deviceInfo.iosInfo;
+          _deviceId = 'ios-${iosInfo.identifierForVendor}';
+        } else {
+          _deviceId = 'unknown-${const Uuid().v4()}';
+        }
       } catch (e) {
-        // Skip types that cause errors (not supported on this device/platform)
+        OseerLogger.error(
+            'Could not get native device ID, generating UUID.', e);
+        _deviceId = 'generated-${const Uuid().v4()}';
+      }
+      await _prefs.setString(OseerConstants.keyDeviceId, _deviceId!);
+    }
+    return _deviceId!;
+  }
+
+  Future<Map<String, dynamic>> getDeviceInfo() async {
+    if (_deviceBrand == null ||
+        _deviceModel == null ||
+        _deviceOsVersion == null) {
+      await _loadDeviceInfo();
+    }
+
+    return {
+      'platform': Platform.isAndroid ? 'android' : 'ios',
+      'model': _deviceModel ?? 'Unknown Model',
+      'brand': _deviceBrand ?? 'Unknown Brand',
+      'osVersion': _deviceOsVersion ?? 'Unknown Version',
+    };
+  }
+
+  Future<HealthAuthStatus> checkWellnessPermissions(
+      {bool useCache = true}) async {
+    final result = await HealthPermissionManager.checkPermissions();
+    return _adaptPermissionResult(result);
+  }
+
+  Future<HealthAuthStatus> requestWellnessPermissions(
+      {int retryCount = 0}) async {
+    final result = await HealthPermissionManager.requestPermissions();
+    return _adaptPermissionResult(result);
+  }
+
+  HealthAuthStatus _adaptPermissionResult(HealthPermissionResult result) {
+    switch (result) {
+      case HealthPermissionResult.granted:
+        return const HealthAuthStatus(
+            status: HealthPermissionStatus.granted, grantedPermissions: []);
+      case HealthPermissionResult.partiallyGranted:
+        return const HealthAuthStatus(
+            status: HealthPermissionStatus.partiallyGranted,
+            grantedPermissions: []);
+      case HealthPermissionResult.denied:
+        return const HealthAuthStatus(
+            status: HealthPermissionStatus.denied, grantedPermissions: []);
+      case HealthPermissionResult.notAvailable:
+        return const HealthAuthStatus(
+            status: HealthPermissionStatus.unavailable, grantedPermissions: []);
+      case HealthPermissionResult.error:
+      default:
+        return const HealthAuthStatus(
+            status: HealthPermissionStatus.error, grantedPermissions: []);
+    }
+  }
+
+  List<HealthDataType> _getHistoricalDataTypes() {
+    return HealthPermissionManager.allRequestedTypes;
+  }
+
+  List<HealthDataType> _getBodyPrepDataTypes() {
+    if (Platform.isIOS) {
+      return [
+        HealthDataType.HEART_RATE,
+        HealthDataType.RESTING_HEART_RATE,
+        HealthDataType.HEART_RATE_VARIABILITY_SDNN,
+        HealthDataType.STEPS,
+        HealthDataType.ACTIVE_ENERGY_BURNED,
+        HealthDataType.BASAL_ENERGY_BURNED,
+        HealthDataType.DISTANCE_WALKING_RUNNING,
+        HealthDataType.WORKOUT,
+        HealthDataType.SLEEP_ASLEEP,
+        HealthDataType.WEIGHT,
+        HealthDataType.HEIGHT,
+      ];
+    } else {
+      return [
+        HealthDataType.HEART_RATE,
+        HealthDataType.RESTING_HEART_RATE,
+        HealthDataType.HEART_RATE_VARIABILITY_RMSSD,
+        HealthDataType.STEPS,
+        HealthDataType.ACTIVE_ENERGY_BURNED,
+        HealthDataType.TOTAL_CALORIES_BURNED,
+        HealthDataType.DISTANCE_DELTA,
+        HealthDataType.WORKOUT,
+        HealthDataType.SLEEP_SESSION,
+        HealthDataType.SLEEP_ASLEEP,
+        HealthDataType.WEIGHT,
+        HealthDataType.HEIGHT,
+      ];
+    }
+  }
+
+  List<HealthDataType> _getCriticalHealthDataTypes() {
+    return [
+      HealthDataType.WEIGHT,
+      HealthDataType.HEIGHT,
+      HealthDataType.STEPS,
+      HealthDataType.SLEEP_ASLEEP,
+    ];
+  }
+
+  Future<Map<String, dynamic>> _checkHealthServicesAvailable() async {
+    if (kIsWeb || !Platform.isAndroid)
+      return {
+        'availability': 'not_available',
+        'installed': false,
+        'supported': false
+      };
+    try {
+      final result =
+          await _channel.invokeMethod('checkHealthConnectAvailability');
+      return Map<String, dynamic>.from(result as Map);
+    } catch (e, s) {
+      OseerLogger.error('Error invoking checkHealthConnectAvailability', e, s);
+      return {
+        'availability': 'error',
+        'installed': false,
+        'supported': false,
+        'error': e.toString()
+      };
+    }
+  }
+
+  Future<bool> openHealthConnectInstallation() async {
+    if (kIsWeb || !Platform.isAndroid) return false;
+    try {
+      return await _channel.invokeMethod('installHealthConnect') as bool? ??
+          false;
+    } catch (e, s) {
+      OseerLogger.error('Error invoking native installHealthConnect', e, s);
+      return false;
+    }
+  }
+
+  Future<bool> openHealthConnectSettings() async {
+    if (kIsWeb || !Platform.isAndroid) return false;
+    try {
+      return await _channel.invokeMethod('openHealthConnectSettings')
+              as bool? ??
+          false;
+    } catch (e, s) {
+      OseerLogger.error(
+          'Error invoking native openHealthConnectSettings', e, s);
+      return false;
+    }
+  }
+
+  Future<void> debugHealthDataAvailability() async {
+    OseerLogger.info('--- STARTING HEALTH DATA AVAILABILITY DEBUG ---');
+    final now = DateTime.now();
+    final ranges = [
+      const Duration(hours: 48),
+      const Duration(days: 7),
+      const Duration(days: 30)
+    ];
+
+    final typesToDebug = Platform.isIOS
+        ? [
+            HealthDataType.HEART_RATE,
+            HealthDataType.HEART_RATE_VARIABILITY_SDNN,
+            HealthDataType.SLEEP_SESSION,
+            HealthDataType.STEPS,
+          ]
+        : [
+            HealthDataType.HEART_RATE,
+            HealthDataType.HEART_RATE_VARIABILITY_RMSSD,
+            HealthDataType.SLEEP_SESSION,
+            HealthDataType.STEPS,
+          ];
+
+    for (final type in typesToDebug) {
+      OseerLogger.info('--- Checking for ${type.name} ---');
+      for (final range in ranges) {
+        try {
+          final data = await _health.getHealthDataFromTypes(
+            startTime: now.subtract(range),
+            endTime: now,
+            types: [type],
+          );
+          OseerLogger.info(
+              ' -> Last ${range.inDays > 0 ? '${range.inDays} days' : '${range.inHours} hours'}: Found ${data.length} data points.');
+        } catch (e) {
+          OseerLogger.error(
+              ' -> Error fetching for last ${range.inDays} days: $e');
+        }
+      }
+    }
+    OseerLogger.info('--- FINISHED HEALTH DATA AVAILABILITY DEBUG ---');
+  }
+
+  Future<UserProfile?> extractUserProfileData() async {
+    OseerLogger.warning(
+        'Profile data extraction is limited on ${Platform.operatingSystem}.');
+    if (kIsWeb) return null;
+    try {
+      final userId = _prefs.getString(OseerConstants.keyUserId);
+      if (userId == null) return null;
+      final name = _prefs.getString(OseerConstants.keyUserName) ?? '';
+      final email = _prefs.getString(OseerConstants.keyUserEmail) ?? '';
+      final now = DateTime.now();
+      final oneYearAgo = now.subtract(const Duration(days: 365));
+      double? weight, height;
+      if (await _health.hasPermissions([HealthDataType.WEIGHT]) ?? false) {
+        final data = await _health.getHealthDataFromTypes(
+            startTime: oneYearAgo,
+            endTime: now,
+            types: [HealthDataType.WEIGHT]);
+        if (data.isNotEmpty) {
+          final value = data.last.value;
+          if (value is NumericHealthValue)
+            weight = value.numericValue.toDouble();
+        }
+      }
+      if (await _health.hasPermissions([HealthDataType.HEIGHT]) ?? false) {
+        final data = await _health.getHealthDataFromTypes(
+            startTime: oneYearAgo,
+            endTime: now,
+            types: [HealthDataType.HEIGHT]);
+        if (data.isNotEmpty) {
+          final value = data.last.value;
+          if (value is NumericHealthValue) {
+            height = value.numericValue.toDouble();
+            if (height < 3) height *= 100;
+          }
+        }
+      }
+      return UserProfile(
+          userId: userId,
+          name: name,
+          email: email,
+          weight: weight,
+          height: height);
+    } catch (e, s) {
+      OseerLogger.error('Error extracting user profile data', e, s);
+      return null;
+    }
+  }
+
+  Future<void> _saveSyncState(SyncState state) async {
+    await _prefs.setString(
+        OseerConstants.keyHistoricalSyncState, json.encode(state.toJson()));
+    OseerLogger.info(
+        'Sync state saved. Last completed chunk: ${state.lastCompletedChunk}');
+  }
+
+  SyncState _loadSyncState() {
+    final stateJson = _prefs.getString(OseerConstants.keyHistoricalSyncState);
+    if (stateJson != null) {
+      try {
+        final decoded = json.decode(stateJson);
+        OseerLogger.info('Loaded previous sync state: $decoded');
+        return SyncState.fromJson(decoded);
+      } catch (e) {
+        OseerLogger.warning("Could not parse sync state, starting over.", e);
+      }
+    }
+    OseerLogger.info('No previous sync state found, creating new one.');
+    return SyncState(totalDaysToSync: 90, chunkSizeInDays: 7);
+  }
+
+  Future<void> performOnboardingSync() async {
+    _syncCancelled = false;
+    var progress = SyncProgress.initial().copyWith(
+      currentActivity: 'Your wellness assessment will begin shortly...',
+    );
+    _progressController.add(progress);
+    await _notificationService.showSyncProgressNotification(progress);
+
+    await Future.delayed(const Duration(seconds: 15));
+    if (_syncCancelled) {
+      _handleCancellation(progress, 'pre-sync');
+      return;
+    }
+
+    // --- PHASE 1: 48-Hour Sync ---
+    bool bodyPrepSyncComplete =
+        _prefs.getBool(OseerConstants.keyBodyPrepSyncComplete) ?? false;
+    if (!bodyPrepSyncComplete) {
+      OseerLogger.info(
+          '[Onboarding Sync Phase 1] Starting 48-hour data sync...');
+      progress = progress.copyWith(
+          currentPhase: 'bodyPrep',
+          currentActivity: 'Phase 1: Syncing recent wellness data...');
+      _progressController.add(progress);
+      await _notificationService.showSyncProgressNotification(progress);
+
+      bool success = await _runSyncForTimeRange(
+        startTime: DateTime.now().subtract(const Duration(hours: 48)),
+        endTime: DateTime.now(),
+        syncType: SyncType.priority,
+        onProgress: (syncProgress) {
+          _progressController.add(syncProgress);
+        },
+      );
+
+      if (!success) {
+        _handleSyncFailure(
+            "Failed to sync recent data. The process will try again later.");
+        return;
+      }
+      await _prefs.setBool(OseerConstants.keyBodyPrepSyncComplete, true);
+      OseerLogger.info('[Onboarding Sync] Phase 1 complete.');
+    } else {
+      OseerLogger.info('[Onboarding Sync Phase 1] Already complete, skipping.');
+    }
+
+    // --- PHASE 2: 90-Day Historical Sync (Chunked & Resumable) ---
+    SyncState syncState = _loadSyncState();
+    final int totalChunks =
+        (syncState.totalDaysToSync / syncState.chunkSizeInDays).ceil();
+    final int startChunk = syncState.lastCompletedChunk + 1;
+
+    if (startChunk >= totalChunks) {
+      OseerLogger.info(
+          '[Onboarding Sync Phase 2] All historical chunks already synced.');
+    } else {
+      progress = progress.copyWith(
+        currentPhase: 'digitalTwin',
+        bodyPrepProgress: 1.0,
+        currentActivity: 'Beginning historical data sync...',
+        digitalTwinDaysProcessed: startChunk * syncState.chunkSizeInDays,
+      );
+      _progressController.add(progress);
+      await _notificationService.showSyncProgressNotification(progress);
+
+      for (int i = startChunk; i < totalChunks; i++) {
+        if (_syncCancelled) {
+          _handleCancellation(progress, 'historical-sync-chunk-$i');
+          return;
+        }
+
+        final daysFromEnd = i * syncState.chunkSizeInDays;
+        final chunkEndDate =
+            DateTime.now().subtract(Duration(days: daysFromEnd));
+        final chunkStartDate =
+            chunkEndDate.subtract(Duration(days: syncState.chunkSizeInDays));
+        final daysProcessed = (i + 1) * syncState.chunkSizeInDays;
+
+        progress = progress.copyWith(
+          digitalTwinProgress: (i + 1) / totalChunks,
+          digitalTwinDaysProcessed: daysProcessed > syncState.totalDaysToSync
+              ? syncState.totalDaysToSync
+              : daysProcessed,
+          currentActivity:
+              'Syncing historical data: Week ${i + 1} of $totalChunks...',
+        );
+        _progressController.add(progress);
+        await _notificationService.showSyncProgressNotification(progress);
+
         OseerLogger.info(
-            'Health data type ${type.toString()} not available on this device');
+            '[Onboarding Sync] Syncing chunk ${i + 1}/$totalChunks: From $chunkStartDate to $chunkEndDate');
+
+        bool success = await _runSyncForTimeRange(
+          startTime: chunkStartDate,
+          endTime: chunkEndDate,
+          syncType: SyncType.historical,
+          onProgress: (syncProgress) {
+            _progressController.add(syncProgress);
+          },
+        );
+
+        if (!success) {
+          _handleSyncFailure(
+              "A network error occurred. The sync will resume automatically when the app is restarted.");
+          return;
+        }
+
+        await _saveSyncState(syncState.copyWith(lastCompletedChunk: i));
+        await Future.delayed(const Duration(seconds: 1));
+      }
+    }
+
+    OseerLogger.info('[Onboarding Sync] All phases complete.');
+
+    progress = progress.copyWith(
+        isComplete: true,
+        currentPhase: 'complete',
+        digitalTwinProgress: 1.0,
+        digitalTwinDaysProcessed: syncState.totalDaysToSync,
+        currentActivity:
+            'Data sync complete! We\'ll notify you when your reports are ready.');
+    _progressController.add(progress);
+
+    await _prefs.setBool(OseerConstants.keyOnboardingComplete, true);
+    await _prefs.setBool(OseerConstants.keyHistoricalSyncComplete, true);
+    await _notificationService.dismissSyncNotifications();
+    HapticFeedback.heavyImpact();
+
+    await _notificationService.showSyncCompleteNotification(
+      title: 'Wellness Data Synced!',
+      message: 'Your foundational analysis is now being prepared.',
+      duration: DateTime.now().difference(progress.syncStartTime!),
+    );
+  }
+
+  void _handleCancellation(SyncProgress progress, String context) {
+    OseerLogger.info('[$context] Sync cancelled by user.');
+    _progressController.add(
+        progress.copyWith(currentActivity: 'Sync Cancelled', isError: true));
+    _notificationService.dismissSyncNotifications();
+  }
+
+  void _handleSyncFailure(String errorMessage) {
+    lastSyncMessage = errorMessage;
+    final errorProgress = SyncProgress(
+      isError: true,
+      errorMessage: errorMessage,
+      currentPhase: 'error',
+      currentActivity: 'Sync failed',
+      bodyPrepProgress: 0.0,
+      digitalTwinDaysProcessed: 0,
+    );
+    _progressController.add(errorProgress);
+    _notificationService.showSyncProgressNotification(errorProgress);
+    HapticFeedback.heavyImpact();
+  }
+
+  Future<bool> _runSyncForTimeRange({
+    required DateTime startTime,
+    required DateTime endTime,
+    required SyncType syncType,
+    required void Function(SyncProgress) onProgress,
+  }) async {
+    final bool isPhase1 = syncType == SyncType.priority;
+
+    // At the very beginning of the method
+    var progress = SyncProgress(
+      currentPhase: isPhase1 ? 'bodyPrep' : 'digitalTwin',
+      currentActivity: 'Preparing to sync...',
+      bodyPrepProgress: isPhase1 ? 0.0 : 1.0,
+      digitalTwinProgress: 0.0,
+      syncStartTime: DateTime.now(),
+      stage: SyncStage.fetching, // ADD THIS
+    );
+    onProgress(progress);
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    // --- PRE-FLIGHT CHECK ---
+    progress = progress.copyWith(
+      currentActivity: 'Checking for new data...',
+      stage: SyncStage.fetching,
+    );
+    onProgress(progress);
+
+    // 1. Fetching Data (25% of the progress)
+    progress = progress.copyWith(
+      currentActivity: 'Fetching data from your device...',
+      bodyPrepProgress: isPhase1 ? _fetchWeight * 0.1 : 1.0,
+    );
+    onProgress(progress); // ADD THIS
+
+    final typesToFetch =
+        isPhase1 ? _getBodyPrepDataTypes() : _getHistoricalDataTypes();
+    final allData = await _fetchHealthDataForTypes(typesToFetch,
+        startDate: startTime, endDate: endTime);
+    final allActivities = await _fetchActivities(startTime, endTime);
+
+    // Report metrics found
+    final Map<String, bool> metricsFound = {
+      'hrv': allData['HEART_RATE_VARIABILITY_RMSSD']?.isNotEmpty == true ||
+          allData['HEART_RATE_VARIABILITY_SDNN']?.isNotEmpty == true,
+      'rhr': allData['RESTING_HEART_RATE']?.isNotEmpty == true,
+      'sleep': allData['SLEEP_ASLEEP']?.isNotEmpty == true ||
+          allData['SLEEP_SESSION']?.isNotEmpty == true,
+      'activity': allActivities.isNotEmpty,
+      'steps': allData['STEPS']?.isNotEmpty == true,
+    };
+
+    // CRITICAL CHECK: Validate data BEFORE uploading
+    if (isPhase1) {
+      final hrvFound = metricsFound['hrv'] == true;
+      final rhrFound = metricsFound['rhr'] == true;
+      final sleepFound = metricsFound['sleep'] == true;
+
+      if (!hrvFound || !rhrFound || !sleepFound) {
+        final errorMsg =
+            "Insufficient recent wellness data found. Oseer needs at least 48 hours of sleep, resting heart rate, and HRV data to provide an accurate score.";
+        lastSyncMessage = errorMsg;
+        OseerLogger.warning(errorMsg);
+        onProgress(SyncProgress.error(errorMsg));
+        return false; // Fail fast
+      }
+    }
+
+    progress = progress.copyWith(
+      bodyPrepProgress: isPhase1 ? _fetchWeight : 1.0,
+      metricsFound: metricsFound,
+      stage: SyncStage.processing, // ADD THIS
+      currentActivity: 'Processing health data...',
+    );
+    onProgress(progress); // ADD THIS
+
+    // 2. Processing Data (5% of the progress)
+    progress = progress.copyWith(
+        currentActivity: 'Processing health data...',
+        stage: SyncStage.processing,
+        bodyPrepProgress:
+            isPhase1 ? _fetchWeight + (_processWeight * 0.5) : 1.0);
+    onProgress(progress);
+
+    if (allData.values.every((list) => list.isEmpty) && allActivities.isEmpty) {
+      OseerLogger.info('No new data to upload in time range.');
+      return true;
+    }
+
+    final userId = _prefs.getString(OseerConstants.keyUserId);
+    final deviceId = _deviceId;
+
+    if (userId == null || deviceId == null) {
+      OseerLogger.error(
+          "Cannot process health data: Missing userId or deviceId.");
+      return false;
+    }
+
+    final processed = _processHealthData(allData, allActivities);
+    final totalDataPoints =
+        processed.metrics.length + processed.activities.length;
+
+    progress = progress.copyWith(
+        bodyPrepProgress: isPhase1 ? _fetchWeight + _processWeight : 1.0,
+        totalDataPoints: totalDataPoints,
+        stage: SyncStage.uploading); // ADD THIS
+    onProgress(progress); // ADD THIS
+
+    // 3. Uploading Data (70% of the progress)
+    progress = progress.copyWith(stage: SyncStage.uploading); // Set stage
+
+    const int uploadChunkSize = 200; // Smaller chunk for more updates
+    int totalUploaded = 0;
+
+    try {
+      // Upload metrics
+      for (int i = 0; i < processed.metrics.length; i += uploadChunkSize) {
+        if (_syncCancelled) return false;
+        final chunk = processed.metrics.sublist(
+            i,
+            (i + uploadChunkSize > processed.metrics.length)
+                ? processed.metrics.length
+                : i + uploadChunkSize);
+
+        OseerLogger.info('Uploading metrics chunk: ${chunk.length} records');
+
+        final success = await _apiService.sendHealthDataBatch(
+            chunk, 'raw_health_data_staging');
+        if (!success) throw Exception('Failed to upload metrics chunk.');
+
+        totalUploaded += chunk.length;
+
+        // **FIX: More frequent progress updates**
+        onProgress(progress.copyWith(
+            currentActivity:
+                'Uploading metrics (${totalUploaded}/${totalDataPoints})...',
+            bodyPrepProgress: isPhase1
+                ? (_fetchWeight + _processWeight) +
+                    (_uploadWeight * (totalUploaded / totalDataPoints))
+                : 1.0,
+            processedDataPoints: totalUploaded));
+      }
+
+      // Upload activities
+      for (int i = 0; i < processed.activities.length; i += uploadChunkSize) {
+        if (_syncCancelled) return false;
+        final chunk = processed.activities.sublist(
+            i,
+            (i + uploadChunkSize > processed.activities.length)
+                ? processed.activities.length
+                : i + uploadChunkSize);
+
+        OseerLogger.info('Uploading activities chunk: ${chunk.length} records');
+
+        final success = await _apiService.sendHealthDataBatch(
+            chunk, 'raw_activities_staging');
+        if (!success) throw Exception('Failed to upload activities chunk.');
+
+        totalUploaded += chunk.length;
+
+        // **FIX: More frequent progress updates**
+        onProgress(progress.copyWith(
+            currentActivity:
+                'Uploading activities (${totalUploaded}/${totalDataPoints})...',
+            bodyPrepProgress: isPhase1
+                ? (_fetchWeight + _processWeight) +
+                    (_uploadWeight * (totalUploaded / totalDataPoints))
+                : 1.0,
+            processedDataPoints: totalUploaded));
+      }
+
+      // --- After successful upload ---
+      progress = progress.copyWith(
+        currentActivity: 'Analyzing your data...',
+        stage: SyncStage.analyzing,
+        bodyPrepProgress: isPhase1 ? 0.95 : 1.0,
+      );
+      onProgress(progress); // ADD THIS
+
+      await Future.delayed(const Duration(seconds: 1));
+      if (_syncCancelled) return false;
+
+      await _apiService.sendHeartbeat();
+      await _prefs.setString(
+          OseerConstants.keyLastSync, DateTime.now().toUtc().toIso8601String());
+
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // At the very end of a successful sync
+      progress = progress.copyWith(
+        bodyPrepProgress: 1.0,
+        currentActivity: 'Sync complete!',
+        isComplete: true, // Mark as complete
+      );
+      onProgress(progress); // ADD THIS
+
+      return true;
+    } catch (e) {
+      OseerLogger.error('Error during data upload stage', e);
+      return false;
+    }
+  }
+
+  Future<bool> syncHealthData({
+    SyncType syncType = SyncType.priority,
+    int? chunkIndex,
+    void Function(SyncProgress)? onProgress,
+  }) async {
+    final logPrefix = '[HealthManager.syncHealthData]';
+    OseerLogger.info(
+        '$logPrefix Starting sync for type: ${syncType.name}, chunk: ${chunkIndex ?? 'N/A'}');
+
+    final progressCallback = onProgress ?? (progress) {};
+
+    try {
+      if (syncType == SyncType.historical) {
+        if (chunkIndex == null) {
+          OseerLogger.error(
+              '$logPrefix Historical sync requires a chunkIndex.');
+          return false;
+        }
+
+        final syncState = _loadSyncState();
+        final daysFromEnd = chunkIndex * syncState.chunkSizeInDays;
+        final chunkEndDate =
+            DateTime.now().subtract(Duration(days: daysFromEnd));
+        final chunkStartDate =
+            chunkEndDate.subtract(Duration(days: syncState.chunkSizeInDays));
+
+        if (daysFromEnd >= syncState.totalDaysToSync) {
+          OseerLogger.info(
+              '$logPrefix All historical chunks are complete. Stopping chain.');
+          await _prefs.setBool(OseerConstants.keyHistoricalSyncComplete, true);
+          return true;
+        }
+
+        OseerLogger.info(
+            '$logPrefix Processing historical chunk ${chunkIndex + 1}: $chunkStartDate to $chunkEndDate');
+
+        final success = await _runSyncForTimeRange(
+          startTime: chunkStartDate,
+          endTime: chunkEndDate,
+          syncType: syncType,
+          onProgress: progressCallback,
+        );
+
+        if (success) {
+          await _saveSyncState(
+              syncState.copyWith(lastCompletedChunk: chunkIndex));
+        }
+        return success;
+      } else {
+        return await _runSyncForTimeRange(
+          startTime: DateTime.now().subtract(const Duration(hours: 48)),
+          endTime: DateTime.now(),
+          syncType: syncType,
+          onProgress: progressCallback,
+        );
+      }
+    } catch (e, s) {
+      OseerLogger.error('$logPrefix CRITICAL SYNC FAILURE', e, s);
+      return false;
+    }
+  }
+
+  Future<Map<String, List<HealthDataPoint>>> _fetchHealthDataForTypes(
+      List<HealthDataType> typesToFetch,
+      {required DateTime startDate,
+      required DateTime endDate}) async {
+    final result = <String, List<HealthDataPoint>>{};
+    for (final typeEnum in typesToFetch) {
+      try {
+        final List<HealthDataPoint> typeData =
+            await _health.getHealthDataFromTypes(
+          startTime: startDate,
+          endTime: endDate,
+          types: [typeEnum],
+        );
+        result[typeEnum.name] = typeData;
+
+        if (typeData.isEmpty) {
+          if ([
+            HealthDataType.HEART_RATE_VARIABILITY_RMSSD,
+            HealthDataType.HEART_RATE_VARIABILITY_SDNN,
+            HealthDataType.SLEEP_SESSION
+          ].contains(typeEnum)) {
+            OseerLogger.warning(
+                'Fetched 0 points for CRITICAL metric: ${typeEnum.name}. This may indicate no data exists on the device for the selected time range.');
+          }
+        } else {
+          OseerLogger.info(
+              'Fetched ${typeData.length} points for ${typeEnum.name}');
+        }
+      } catch (e, s) {
+        OseerLogger.error(
+            'Failed to fetch data for type: ${typeEnum.name}', e, s);
+        result[typeEnum.name] = [];
+      }
+    }
+    return result;
+  }
+
+  Future<List<HealthDataPoint>> _fetchActivities(
+      DateTime startDate, DateTime endDate) async {
+    try {
+      final workoutData = await _health.getHealthDataFromTypes(
+        startTime: startDate,
+        endTime: endDate,
+        types: [HealthDataType.WORKOUT],
+      );
+      return workoutData;
+    } catch (e, s) {
+      OseerLogger.error('Failed to fetch activities', e, s);
+      return [];
+    }
+  }
+
+  String _standardizeActivityType(HealthWorkoutActivityType type) {
+    final Map<String, String> knownTypeMappings = {
+      'WALKING': 'Walking',
+      'RUNNING': 'Running',
+      'CYCLING': 'Cycling',
+      'ELLIPTICAL': 'Elliptical',
+      'ROWER': 'Rowing',
+      'STAIR_STEPPER': 'Stair Climbing',
+      'HIKING': 'Hiking',
+      'SWIMMING': 'Swimming',
+      'WHEELCHAIR': 'Wheelchair',
+      'OTHER': 'General Activity',
+      'AMERICAN_FOOTBALL': 'American Football',
+      'ARCHERY': 'Archery',
+      'AUSTRALIAN_FOOTBALL': 'Australian Football',
+      'BADMINTON': 'Badminton',
+      'BASEBALL': 'Baseball',
+      'BASKETBALL': 'Basketball',
+      'BOWLING': 'Bowling',
+      'BOXING': 'Boxing',
+      'CLIMBING': 'Climbing',
+      'CRICKET': 'Cricket',
+      'CROSS_COUNTRY_SKIING': 'Cross Country Skiing',
+      'CROSS_TRAINING': 'Cross Training',
+      'CURLING': 'Curling',
+      'DANCING': 'Dancing',
+      'DISC_SPORTS': 'Disc Sports',
+      'DOWNHILL_SKIING': 'Downhill Skiing',
+      'EQUESTRIAN_SPORTS': 'Equestrian Sports',
+      'FENCING': 'Fencing',
+      'FISHING': 'Fishing',
+      'FUNCTIONAL_STRENGTH_TRAINING': 'Functional Training',
+      'GOLF': 'Golf',
+      'GYMNASTICS': 'Gymnastics',
+      'HANDBALL': 'Handball',
+      'HIGH_INTENSITY_INTERVAL_TRAINING': 'HIIT',
+      'HOCKEY': 'Hockey',
+      'HUNTING': 'Hunting',
+      'JUMP_ROPE': 'Jump Rope',
+      'KICKBOXING': 'Kickboxing',
+      'LACROSSE': 'Lacrosse',
+      'MARTIAL_ARTS': 'Martial Arts',
+      'MIND_AND_BODY': 'Mind and Body',
+      'PADDLE_SPORTS': 'Paddle Sports',
+      'PILATES': 'Pilates',
+      'PLAY': 'Play',
+      'RACQUETBALL': 'Racquetball',
+      'ROCK_CLIMBING': 'Rock Climbing',
+      'RUGBY': 'Rugby',
+      'SAILING': 'Sailing',
+      'SKATING': 'Skating',
+      'SKATING_SPORTS': 'Skating Sports',
+      'SNOWBOARDING': 'Snowboarding',
+      'SNOWSPORTS': 'Snow Sports',
+      'SOCCER': 'Soccer',
+      'SOFTBALL': 'Softball',
+      'SQUASH': 'Squash',
+      'STAIR_CLIMBING': 'Stair Climbing',
+      'STRENGTH_TRAINING': 'Strength Training',
+      'SURFING': 'Surfing',
+      'TABLE_TENNIS': 'Table Tennis',
+      'TAI_CHI': 'Tai Chi',
+      'TENNIS': 'Tennis',
+      'TRACK_AND_FIELD': 'Track and Field',
+      'TRADITIONAL_STRENGTH_TRAINING': 'Traditional Strength Training',
+      'VOLLEYBALL': 'Volleyball',
+      'WATER_FITNESS': 'Water Fitness',
+      'WATER_POLO': 'Water Polo',
+      'WATER_SPORTS': 'Water Sports',
+      'WRESTLING': 'Wrestling',
+      'YOGA': 'Yoga',
+    };
+
+    final enumName = type.toString().split('.').last;
+
+    if (knownTypeMappings.containsKey(enumName)) {
+      return knownTypeMappings[enumName]!;
+    }
+
+    String formatted = enumName
+        .replaceAll('WORKOUT_TYPE_', '')
+        .replaceAll('WORKOUT_', '')
+        .replaceAll('ACTIVITY_TYPE_', '')
+        .replaceAll('ACTIVITY_', '')
+        .replaceAll('_', ' ')
+        .toLowerCase()
+        .split(' ')
+        .map((word) => word.isNotEmpty
+            ? '${word[0].toUpperCase()}${word.substring(1)}'
+            : '')
+        .join(' ')
+        .trim();
+
+    if (formatted.isEmpty) {
+      return 'Unknown Activity';
+    }
+
+    OseerLogger.info(
+        'Unknown workout type encountered: $enumName -> $formatted');
+
+    return formatted;
+  }
+
+  ProcessedData _processHealthData(
+      Map<String, List<HealthDataPoint>> healthDataMap,
+      List<HealthDataPoint> activities) {
+    final List<Map<String, dynamic>> metricRecords = [];
+    final List<Map<String, dynamic>> activityRecords = [];
+    final userId = _prefs.getString(OseerConstants.keyUserId);
+    final deviceId = _deviceId;
+
+    if (userId == null || deviceId == null) {
+      OseerLogger.error(
+          "Cannot process health data: Missing userId or deviceId.");
+      return ProcessedData(metrics: [], activities: []);
+    }
+
+    healthDataMap.forEach((_, dataPoints) {
+      for (final point in dataPoints) {
+        if (point.type == HealthDataType.WORKOUT) continue;
+        if (point.dateFrom.isAfter(point.dateTo)) continue;
+
+        if (point.dateFrom
+            .isAfter(DateTime.now().add(const Duration(hours: 1)))) {
+          OseerLogger.warning('Skipping future-dated health point',
+              {'date': point.dateFrom.toIso8601String()});
+          continue;
+        }
+
+        String dataTypeName = point.type.name;
+        if (Platform.isIOS &&
+            point.type == HealthDataType.HEART_RATE_VARIABILITY_SDNN) {
+          dataTypeName = 'HEART_RATE_VARIABILITY_RMSSD';
+        }
+
+        final record = <String, dynamic>{
+          'user_id': userId,
+          'device_id': deviceId,
+          'data_type': dataTypeName,
+          'unit': point.unit.name,
+          'timestamp_from': point.dateFrom.toUtc().toIso8601String(),
+          'timestamp_to': point.dateTo.toUtc().toIso8601String(),
+          'source_name': point.sourceName,
+          'source': point.sourceId,
+          'metadata': {
+            'device_brand': _deviceBrand,
+            'device_model': _deviceModel,
+            'device_os_version': _deviceOsVersion,
+            'platform': Platform.operatingSystem,
+          }
+        };
+
+        final value = point.value;
+        if (value is NumericHealthValue) {
+          final numericVal = value.numericValue.toDouble();
+
+          if (point.type == HealthDataType.HEART_RATE &&
+              (numericVal < 30 || numericVal > 220)) {
+            OseerLogger.warning(
+                'Skipping suspicious heart rate value: $numericVal');
+            continue;
+          }
+
+          if ((point.type == HealthDataType.HEART_RATE_VARIABILITY_RMSSD ||
+                  point.type == HealthDataType.HEART_RATE_VARIABILITY_SDNN) &&
+              (numericVal < 0 || numericVal > 300)) {
+            OseerLogger.warning('Skipping suspicious HRV value: $numericVal');
+            continue;
+          }
+
+          record['value_numeric'] = numericVal;
+        } else {
+          record['value_text'] = value.toString();
+        }
+        metricRecords.add(record);
+      }
+    });
+
+    for (final point in activities) {
+      if (point.value is WorkoutHealthValue) {
+        final workout = point.value as WorkoutHealthValue;
+
+        final durationInMinutes =
+            point.dateTo.difference(point.dateFrom).inMinutes.toDouble();
+        if (durationInMinutes < 0) {
+          OseerLogger.warning("Skipping workout with negative duration.");
+          continue;
+        }
+
+        activityRecords.add({
+          'user_id': userId,
+          'device_id': deviceId,
+          'start_time': point.dateFrom.toUtc().toIso8601String(),
+          'end_time': point.dateTo.toUtc().toIso8601String(),
+          'activity_type':
+              _standardizeActivityType(workout.workoutActivityType),
+          'duration_minutes': durationInMinutes,
+          'total_distance_meters': workout.totalDistance,
+          'total_energy_burned_kcal': workout.totalEnergyBurned,
+          'source': point.sourceId,
+          'source_name': point.sourceName,
+          'metadata': {
+            'device_brand': _deviceBrand,
+            'device_model': _deviceModel,
+            'device_os_version': _deviceOsVersion,
+            'platform': Platform.operatingSystem,
+          }
+        });
       }
     }
 
     OseerLogger.info(
-        'Available health data types: ${supportedTypes.map((e) => e.toString()).join(", ")}');
-    return supportedTypes;
+        'Processed ${metricRecords.length} metric points and ${activityRecords.length} activity points.');
+    return ProcessedData(metrics: metricRecords, activities: activityRecords);
   }
 
-  /// Request Health Connect permissions
-  Future<HealthAuthStatus> requestWellnessPermissions() async {
-    try {
-      OseerLogger.info('Requesting Health Connect permissions...');
-
-      // Check if Health Connect is available
-      final isAvailable = await isWellnessConnectAvailable();
-      if (!isAvailable) {
-        OseerLogger.info('Health Connect is not available on this device');
-        return const HealthAuthStatus(
-          status: HealthPermissionStatus.unavailable,
-          grantedPermissions: [],
-          message: 'Health Connect is not available on this device',
-        );
-      }
-
-      // Get available data types for this device
-      final availableTypes = await _getDeviceSupportedDataTypes();
-      if (availableTypes.isEmpty) {
-        OseerLogger.warning(
-            'No supported health data types found on this device');
-        return const HealthAuthStatus(
-          status: HealthPermissionStatus.unavailable,
-          grantedPermissions: [],
-          message: 'No supported health data types found on this device',
-        );
-      }
-
-      // Request permissions for available types
-      OseerLogger.info(
-          'Requesting permissions for ${availableTypes.length} data types');
-      bool requestResult = false;
-      try {
-        requestResult = await _health.requestAuthorization(availableTypes);
-      } catch (e) {
-        OseerLogger.warning('Error requesting health permissions', e);
-
-        // Try with essential types if the full request fails
-        try {
-          final essentialTypes = availableTypes
-              .where((type) =>
-                  type == HealthDataType.STEPS ||
-                  type == HealthDataType.HEART_RATE ||
-                  type == HealthDataType.SLEEP_ASLEEP)
-              .toList();
-
-          if (essentialTypes.isNotEmpty) {
-            OseerLogger.info(
-                'Trying with essential permissions only: ${essentialTypes.length} types');
-            requestResult = await _health.requestAuthorization(essentialTypes);
-          }
-        } catch (subsetError) {
-          OseerLogger.error(
-              'Failed to request even essential permissions', subsetError);
-        }
-      }
-
-      // Check which permissions were actually granted
-      final grantedTypes = <String>[];
-      for (final type in availableTypes) {
-        try {
-          final hasPermission = await _health.hasPermissions([type]);
-          if (hasPermission == true) {
-            grantedTypes.add(type.toString());
-          }
-        } catch (e) {
-          OseerLogger.warning(
-              'Error checking granted permission for ${type.toString()}', e);
-        }
-      }
-
-      // Determine the status based on granted permissions
-      if (grantedTypes.length == availableTypes.length) {
-        OseerLogger.info('All health permissions granted');
-        return HealthAuthStatus(
-          status: HealthPermissionStatus.granted,
-          grantedPermissions: grantedTypes,
-        );
-      } else if (grantedTypes.isNotEmpty) {
-        OseerLogger.info(
-            'Partially granted health permissions: ${grantedTypes.join(", ")}');
-        return HealthAuthStatus(
-          status: HealthPermissionStatus.partiallyGranted,
-          grantedPermissions: grantedTypes,
-        );
-      } else {
-        OseerLogger.info('No health permissions granted after request');
-        return const HealthAuthStatus(
-          status: HealthPermissionStatus.denied,
-          grantedPermissions: [],
-        );
-      }
-    } catch (e) {
-      OseerLogger.error('Error requesting health permissions', e);
-      return HealthAuthStatus(
-        status: HealthPermissionStatus.denied,
-        grantedPermissions: [],
-        message: 'Error requesting permissions: ${e.toString()}',
-      );
-    }
+  String? _getMetricColumnName(HealthDataType type) {
+    const Map<HealthDataType, String> map = {
+      HealthDataType.HEART_RATE: 'heart_rate',
+      HealthDataType.RESTING_HEART_RATE: 'resting_heart_rate',
+      HealthDataType.HEART_RATE_VARIABILITY_RMSSD: 'hrv',
+      HealthDataType.HEART_RATE_VARIABILITY_SDNN: 'hrv',
+      HealthDataType.STEPS: 'steps',
+      HealthDataType.ACTIVE_ENERGY_BURNED: 'active_energy_burned',
+      HealthDataType.BASAL_ENERGY_BURNED: 'basal_energy_burned',
+      HealthDataType.SLEEP_ASLEEP: 'sleep_duration',
+      HealthDataType.SLEEP_DEEP: 'sleep_duration',
+      HealthDataType.SLEEP_REM: 'sleep_duration',
+      HealthDataType.SLEEP_LIGHT: 'sleep_duration',
+      HealthDataType.SLEEP_SESSION: 'sleep_duration',
+      HealthDataType.SLEEP_AWAKE: 'sleep_duration',
+      HealthDataType.WEIGHT: 'weight',
+      HealthDataType.HEIGHT: 'height',
+      HealthDataType.BODY_TEMPERATURE: 'temperature',
+      HealthDataType.BLOOD_OXYGEN: 'spo2',
+      HealthDataType.DISTANCE_DELTA: 'distance_meters',
+      HealthDataType.DISTANCE_WALKING_RUNNING: 'distance_meters',
+      HealthDataType.FLIGHTS_CLIMBED: 'flights_climbed',
+      HealthDataType.BODY_FAT_PERCENTAGE: 'body_fat_percentage',
+      HealthDataType.BODY_WATER_MASS: 'body_water_mass',
+      HealthDataType.LEAN_BODY_MASS: 'lean_body_mass',
+      HealthDataType.BLOOD_GLUCOSE: 'blood_glucose',
+      HealthDataType.BLOOD_PRESSURE_SYSTOLIC: 'blood_pressure_systolic',
+      HealthDataType.BLOOD_PRESSURE_DIASTOLIC: 'blood_pressure_diastolic',
+      HealthDataType.RESPIRATORY_RATE: 'respiratory_rate',
+      HealthDataType.WATER: 'water',
+      HealthDataType.TOTAL_CALORIES_BURNED: 'total_energy_burned_kcal',
+    };
+    return map[type];
   }
 
-  /// Collect and sync health data with the API
-  Future<bool> syncWellnessData() async {
-    try {
-      OseerLogger.info('Starting health data collection');
-
-      // Check permissions first
-      final authStatus = await checkWellnessPermissions();
-      if (authStatus.status == HealthPermissionStatus.denied) {
-        OseerLogger.warning('Cannot collect health data: No permissions');
-        return false;
-      }
-
-      // If Health Connect is unavailable, return with clear message
-      if (authStatus.status == HealthPermissionStatus.unavailable) {
-        OseerLogger.warning(
-            'Cannot collect health data: Health Connect unavailable');
-        return false;
-      }
-
-      // Get available data types
-      final availableTypes = await _getDeviceSupportedDataTypes();
-      if (availableTypes.isEmpty) {
-        OseerLogger.warning('No available health data types to collect');
-        return false;
-      }
-
-      // Get time range (last 90 days to now)
-      final now = DateTime.now();
-      final startTime = now.subtract(_dataTimespan);
-
-      OseerLogger.info(
-          'Collecting health data from ${startTime.toIso8601String()} to ${now.toIso8601String()}');
-
-      // Define which types to use based on granted permissions
-      final typesToFetch = <HealthDataType>[];
-      for (final type in availableTypes) {
-        try {
-          final hasPermission = await _health.hasPermissions([type]);
-          if (hasPermission == true) {
-            typesToFetch.add(type);
-          }
-        } catch (e) {
-          // Skip types that cause errors
-        }
-      }
-
-      if (typesToFetch.isEmpty) {
-        OseerLogger.warning('No available health data types with permissions');
-        return false;
-      }
-
-      OseerLogger.info(
-          'Collecting data for types: ${typesToFetch.map((e) => e.toString()).join(", ")}');
-
-      // Get device information
-      final deviceInfo = await getDeviceInfo();
-
-      // Fetch available health data
-      final healthData = await _health.getHealthDataFromTypes(
-        startTime: startTime,
-        endTime: now,
-        types: typesToFetch,
-      );
-
-      if (healthData.isEmpty) {
-        OseerLogger.warning('No health data found for the requested period');
-        return false;
-      }
-
-      OseerLogger.info('Retrieved ${healthData.length} health data points');
-
-      // Get user ID
-      final userId = _prefs.getString(OseerConstants.keyUserId);
-      if (userId == null || userId.isEmpty) {
-        OseerLogger.error('User ID not found in preferences');
-        return false;
-      }
-
-      // Create health data object with raw data - no processing
-      final healthDataObject = {
-        'user_id': userId,
-        'timestamp': now.toISOString(),
-        'device_info': deviceInfo.toJson(),
-        'raw_data': healthData
-            .map((e) => {
-                  'type': e.type.toString(),
-                  'unit': e.unit.toString(),
-                  'value': e.value.toString(),
-                  'date_from': e.dateFrom.toISOString(),
-                  'date_to': e.dateTo.toISOString(),
-                  'source_id': e.sourceId,
-                  'source_name': e.sourceName,
-                })
-            .toList(),
-      };
-
-      // Send to API without any processing
-      final result = await _apiService.processWellnessData(healthDataObject);
-
-      // Save last sync time
-      await _prefs.setString(OseerConstants.keyLastSync, now.toISOString());
-
-      OseerLogger.info('Health data collection successful');
-      return result['success'] == true;
-    } catch (e) {
-      OseerLogger.error('Error collecting health data', e);
-      return false;
-    }
+  void cancelSync() {
+    _syncCancelled = true;
   }
 
-  /// Check if Health Connect is available on the device
-  Future<bool> isWellnessConnectAvailable() async {
-    try {
-      OseerLogger.info('Checking if Health Connect is available...');
-
-      // Multiple detection approaches for better reliability
-      bool isAvailable = false;
-
-      // Method 1: Check if Health is installed using device information
-      try {
-        final androidInfo = await _deviceInfo.androidInfo;
-        final sdkInt = androidInfo.version.sdkInt;
-
-        // Health Connect requires Android API 30+
-        if (sdkInt < 30) {
-          OseerLogger.info(
-              'Device running Android API $sdkInt (too old for Health Connect)');
-          return false;
-        }
-
-        // Try to check if package is installed by testing a simple Health API call
-        try {
-          final hasStepsType =
-              await _health.hasPermissions([HealthDataType.STEPS]);
-          isAvailable = hasStepsType != null;
-          OseerLogger.info('Health Connect is installed');
-          return true;
-        } catch (e) {
-          if (e.toString().contains('not installed') ||
-              e.toString().contains('unavailable')) {
-            OseerLogger.info('Health Connect is not installed');
-            return false;
-          }
-          // Other errors might mean it's installed but has other issues
-        }
-      } catch (e) {
-        OseerLogger.warning('Error checking device info', e);
-      }
-
-      // Method 2: Try to verify one simple health data type
-      if (!isAvailable) {
-        try {
-          final hasPermissions =
-              await _health.hasPermissions([HealthDataType.STEPS]);
-          if (hasPermissions != null) {
-            OseerLogger.info(
-                'Health Connect permission check: $hasPermissions');
-            isAvailable = true;
-          }
-        } catch (e) {
-          // If error is specifically about Health Connect not installed, return false
-          if (e.toString().contains('not installed') ||
-              e.toString().contains('unavailable')) {
-            OseerLogger.info(
-                'Health Connect is not installed based on permission check');
-            return false;
-          }
-          // Otherwise, could be permissions or other issue
-          OseerLogger.warning(
-              'Error checking Health Connect via permissions', e);
-        }
-      }
-
-      return isAvailable;
-    } catch (e) {
-      OseerLogger.error('Error checking Health Connect availability', e);
-      return false;
-    }
+  SyncState loadSyncState() {
+    return _loadSyncState();
   }
 
-  /// Get device information
-  Future<DeviceInfo> getDeviceInfo() async {
-    try {
-      final androidInfo = await _deviceInfo.androidInfo;
-
-      return DeviceInfo(
-        model: androidInfo.model,
-        systemVersion: 'Android ${androidInfo.version.release}',
-        name: androidInfo.device,
-        identifier: androidInfo.id,
-      );
-    } catch (e) {
-      OseerLogger.warning('Error getting device info', e);
-
-      // Use fallback values
-      return DeviceInfo(
-        model: 'Android Device',
-        systemVersion: 'Android',
-        name: 'Android Device',
-        identifier: _prefs.getString('device_id') ?? 'unknown',
-      );
-    }
+  void dispose() {
+    _progressController.close();
   }
-
-  /// Get device ID - creates one if it doesn't exist
-  Future<String> getDeviceId() async {
-    try {
-      // Check if we already have a device ID
-      final existingId = _prefs.getString('device_id');
-      if (existingId != null && existingId.isNotEmpty) {
-        return existingId;
-      }
-
-      // Generate a new device ID
-      final deviceId = _uuid.v4();
-      await _prefs.setString('device_id', deviceId);
-
-      return deviceId;
-    } catch (e) {
-      // Fallback to a randomly generated ID
-      final deviceId = _uuid.v4();
-      OseerLogger.warning(
-          'Error getting device ID, using fallback: $deviceId', e);
-      return deviceId;
-    }
-  }
-
-  /// Extract user profile data from Health Connect
-  Future<UserProfile?> extractUserProfileData() async {
-    try {
-      OseerLogger.info(
-          'Attempting to extract user profile data from Health Connect');
-
-      // Check if Health Connect is available and we have permissions
-      final isAvailable = await isWellnessConnectAvailable();
-      if (!isAvailable) {
-        OseerLogger.warning(
-            'Health Connect is not available for profile data extraction');
-        return _createDefaultUserProfile();
-      }
-
-      // Get available data types
-      final availableTypes = await _getDeviceSupportedDataTypes();
-      if (availableTypes.isEmpty) {
-        OseerLogger.warning(
-            'No available health data types found for profile extraction');
-        return _createDefaultUserProfile();
-      }
-
-      // Check permissions
-      final neededTypes = [
-        HealthDataType.HEIGHT,
-        HealthDataType.WEIGHT,
-        HealthDataType.STEPS
-      ].where((type) => availableTypes.contains(type)).toList();
-
-      if (neededTypes.isEmpty) {
-        OseerLogger.warning(
-            'No needed health types are available on this device');
-        return _createDefaultUserProfile();
-      }
-
-      bool hasAnyNeededType = false;
-
-      for (final type in neededTypes) {
-        try {
-          final hasPermission = await _health.hasPermissions([type]);
-          if (hasPermission == true) {
-            hasAnyNeededType = true;
-            break;
-          }
-        } catch (e) {
-          // Ignore errors for individual checks
-        }
-      }
-
-      if (!hasAnyNeededType) {
-        OseerLogger.warning(
-            'Insufficient permissions for profile data extraction');
-        return _createDefaultUserProfile();
-      }
-
-      // Get any existing profile data as a starting point
-      final existingProfile = _getUserProfileFromPrefs();
-
-      // Prepare a data object to hold extracted values
-      double? height;
-      double? weight;
-      String? gender;
-      int? age;
-
-      final now = DateTime.now();
-      final startTime =
-          now.subtract(const Duration(days: 30)); // Look at recent data
-
-      try {
-        // Try to get height data if available and permitted
-        if (availableTypes.contains(HealthDataType.HEIGHT)) {
-          try {
-            final heightData = await _health.getHealthDataFromTypes(
-              startTime: startTime,
-              endTime: now,
-              types: [HealthDataType.HEIGHT],
-            );
-
-            if (heightData.isNotEmpty) {
-              for (final dataPoint in heightData) {
-                final heightValue = double.tryParse(dataPoint.value.toString());
-                if (heightValue != null) {
-                  height = heightValue; // Store the most recent value
-                  break;
-                }
-              }
-            }
-          } catch (e) {
-            OseerLogger.warning('Error extracting height data', e);
-          }
-        }
-
-        // Try to get weight data if available and permitted
-        if (availableTypes.contains(HealthDataType.WEIGHT)) {
-          try {
-            final weightData = await _health.getHealthDataFromTypes(
-              startTime: startTime,
-              endTime: now,
-              types: [HealthDataType.WEIGHT],
-            );
-
-            if (weightData.isNotEmpty) {
-              for (final dataPoint in weightData) {
-                final weightValue = double.tryParse(dataPoint.value.toString());
-                if (weightValue != null) {
-                  weight = weightValue; // Store the most recent value
-                  break;
-                }
-              }
-            }
-          } catch (e) {
-            OseerLogger.warning('Error extracting weight data', e);
-          }
-        }
-      } catch (e) {
-        OseerLogger.warning('Error extracting specific health data', e);
-        // Continue with whatever data we managed to get
-      }
-
-      // Determine activity level based on step data (if available)
-      String? activityLevel;
-      if (availableTypes.contains(HealthDataType.STEPS)) {
-        try {
-          final stepData = await _health.getHealthDataFromTypes(
-            startTime: startTime,
-            endTime: now,
-            types: [HealthDataType.STEPS],
-          );
-
-          if (stepData.isNotEmpty) {
-            // Calculate approximate daily average
-            int totalSteps = 0;
-            for (final dataPoint in stepData) {
-              final steps = int.tryParse(dataPoint.value.toString());
-              if (steps != null) {
-                totalSteps += steps;
-              }
-            }
-
-            // Get the number of days in the data
-            final daysInData = stepData.isNotEmpty
-                ? max(1, now.difference(stepData.first.dateFrom).inDays)
-                : 7;
-
-            final avgDailySteps = totalSteps / daysInData;
-
-            // Determine activity level based on average steps
-            if (avgDailySteps < 5000) {
-              activityLevel = 'Sedentary';
-            } else if (avgDailySteps < 7500) {
-              activityLevel = 'Light';
-            } else if (avgDailySteps < 10000) {
-              activityLevel = 'Moderate';
-            } else if (avgDailySteps < 12500) {
-              activityLevel = 'Active';
-            } else {
-              activityLevel = 'Very Active';
-            }
-          }
-        } catch (e) {
-          OseerLogger.info(
-              'Step data not available for activity level estimation');
-        }
-      }
-
-      // Create profile with the data we've extracted
-      final extractedProfile = UserProfile(
-        // Use existing profile data for name and email
-        name: existingProfile?.name ?? '',
-        email: existingProfile?.email ?? '',
-        phone: existingProfile?.phone,
-
-        // Use newly extracted data for health metrics
-        height: height,
-        weight: weight,
-        gender: gender,
-        age: age,
-        activityLevel: activityLevel,
-      );
-
-      // Check if we actually extracted any useful data
-      final hasExtractedData =
-          height != null || weight != null || activityLevel != null;
-
-      // Only return the profile if we found some data or if we already have a base profile
-      if (hasExtractedData ||
-          (existingProfile != null && existingProfile.name.isNotEmpty)) {
-        OseerLogger.info(
-            'Successfully extracted user profile data from Health Connect');
-        OseerLogger.info(
-            'Extracted profile: height=$height, weight=$weight, gender=$gender, age=$age, activityLevel=$activityLevel');
-
-        return extractedProfile;
-      } else {
-        OseerLogger.warning('Extracted profile contained no useful data');
-        return _createDefaultUserProfile();
-      }
-    } catch (e) {
-      OseerLogger.error(
-          'Error extracting user profile data from Health Connect', e);
-      return _createDefaultUserProfile();
-    }
-  }
-
-  // Create a default user profile when extraction fails
-  UserProfile _createDefaultUserProfile() {
-    return UserProfile(
-      name: _prefs.getString(OseerConstants.keyUserName) ?? '',
-      email: _prefs.getString(OseerConstants.keyUserEmail) ?? '',
-    );
-  }
-
-  // Get user profile from preferences
-  UserProfile? _getUserProfileFromPrefs() {
-    final userName = _prefs.getString(OseerConstants.keyUserName);
-    final userEmail = _prefs.getString(OseerConstants.keyUserEmail);
-    final userPhone = _prefs.getString(OseerConstants.keyUserPhone);
-
-    // Return null if required fields are missing
-    if (userName == null || userEmail == null) {
-      return null;
-    }
-
-    return UserProfile(
-      name: userName,
-      email: userEmail,
-      phone: userPhone,
-      age: _prefs.getInt(OseerConstants.keyUserAge),
-      gender: _prefs.getString(OseerConstants.keyUserGender),
-      height: _prefs.getDouble(OseerConstants.keyUserHeight),
-      weight: _prefs.getDouble(OseerConstants.keyUserWeight),
-      activityLevel: _prefs.getString(OseerConstants.keyUserActivityLevel),
-    );
-  }
-}
-
-// Extension method to convert DateTime to ISO8601 string
-extension DateTimeExtension on DateTime {
-  String toISOString() {
-    return toIso8601String();
-  }
-}
-
-// Math.max implementation for Dart
-int max(int a, int b) {
-  return a > b ? a : b;
 }
